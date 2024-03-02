@@ -1,0 +1,1989 @@
+define("biz_common/utils/respTypes.js",[],function(require,exports,module,alert){
+"use strict";
+var logList=[],log=function(r){
+logList.push(r);
+},printLog=function(){
+for(var r=0,e=logList.length;e>r;++r)console.log("[RespType]"+logList[r]);
+},isArray=function(r){
+return"[object Array]"==Object.prototype.toString.call(r);
+},getValueType=function(r){
+return isArray(r)?"array":typeof r;
+},parseRtDesc=function(r,e){
+var t="mix",o=!1,c=e;
+if(e){
+var n="_R",s=e.indexOf(n),i=e.length-n.length;
+o=-1!=s&&s==i,c=o?e.substring(0,i):e;
+}
+return"string"==typeof r?t=r:isArray(r)?t="array":"object"==typeof r&&(t="object"),
+{
+key:c,
+type:t,
+isRequired:o
+};
+},checkForArrayRtDesc=function(r,e){
+if(!isArray(r))return!1;
+for(var t=0,o=r.length;o>t;++t){
+for(var c,n=r[t],s=0,i=0===e.length;c=e[s++];)if(checkForRtDesc(n,c)){
+i=!0;
+break;
+}
+if(!i)return!1;
+}
+return!0;
+},checkForStringRtDesc=function(r,e){
+var t=getValueType(r),o=parseRtDesc(e),c=o.type==t;
+return c||log("miss match type : "+t+" !== "+o.type),c;
+},checkForObjectRtDesc=function(r,e){
+if("object"!=typeof r||isArray(r))return log("must be object"),!1;
+var t=r,o=r;
+for(var c in e)if(e.hasOwnProperty(c)){
+var n=e[c],s=parseRtDesc(n,c),i=s.key;
+o=t[i];
+var u=getValueType(o);
+if(s.isRequired&&void 0===o)return log("is required @key="+i),!1;
+if(void 0!==o){
+if(u!=s.type&&"mix"!=s.type)return log("miss match type : "+u+" !== "+s.type+" @key="+i),
+!1;
+if(("array"==u||"object"==u)&&"mix"!=s.type&&!checkForRtDesc(o,n))return!1;
+}
+}
+return!0;
+},checkForRtDesc=function(r,e){
+return isArray(e)?checkForArrayRtDesc(r,e):"object"==typeof e?checkForObjectRtDesc(r,e):"string"==typeof e?checkForStringRtDesc(r,e):!1;
+},check=function(json,rtDescs){
+if("string"==typeof json)try{
+json=eval("("+json+")");
+}catch(e){
+return log("parse json error"),!1;
+}
+if("object"!=typeof json)return log("must be object"),!1;
+isArray(rtDesc)||(rtDescs=[rtDescs]);
+for(var rtDesc,i=0;rtDesc=rtDescs[i++];)if(checkForRtDesc(json,rtDesc))return!0;
+return!1;
+};
+return{
+check:function(r,e){
+logList=[];
+try{
+var t=check(r,e);
+return t||printLog(),t;
+}catch(o){
+return logList.push("[rtException]"+o.toString()),printLog(),!1;
+}
+},
+getMsg:function(){
+return logList.join(";");
+}
+};
+});define("biz_common/utils/url/parse.js",[],function(){
+"use strict";
+function r(r){
+var e=r.length,n=r.indexOf("?"),t=r.indexOf("#");
+t=-1==t?e:t,n=-1==n?t:n;
+var a=r.substr(0,n),i=r.substr(n+1,t-n-1),s=r.substr(t+1);
+return{
+host:a,
+query_str:i,
+hash:s
+};
+}
+function e(e,n,t){
+var a=r(e),i=a.query_str,s=[];
+for(var o in n)n.hasOwnProperty(o)&&s.push(o+"="+(t?n[o]:encodeURIComponent(n[o])));
+return s.length>0&&(i+=(""!=i?"&":"")+s.join("&")),a.host+(""!=i?"?"+i:"")+(""!=a.hash?"#"+a.hash:"");
+}
+function n(e,n,t,a){
+e=e||location.href;
+var i=e.indexOf("&"),s=e.length,o=e.replace(/^[\w\d]+:[\/\\]+/g,"").split("").reverse();
+Array.prototype.indexOf||(Array.prototype.indexOf=function(r,e){
+var n;
+if(null==this)throw new TypeError('"this" is null or not defined');
+var t=Object(this),a=t.length>>>0;
+if(0===a)return-1;
+var i=+e||0;
+if(1/0===Math.abs(i)&&(i=0),i>=a)return-1;
+for(n=Math.max(i>=0?i:a-Math.abs(i),0);a>n;){
+if(n in t&&t[n]===r)return n;
+n++;
+}
+return-1;
+});
+var u=s-1-o.indexOf("/");
+-1!=i&&-1==e.indexOf("?")&&i>u&&(e=e.replace("&","?"));
+var h=new RegExp("([\\?&]"+n+"=)[^&#]*");
+if(!e.match(h)){
+var f=r(e),l=f.hash?"#"+f.hash:"";
+e=e.replace(l,"");
+var c=e.indexOf("?");
+return-1==c?e+"?"+n+"="+t+l:c==e.length-1?e+n+"="+t+l:e+"&"+n+"="+t+l;
+}
+return a===!0?e.replace(h,"$1"+t):e;
+}
+function t(r){
+var e=arguments[1]||window.location.search,n=new RegExp("(^|&)"+r+"=([^&]*)(&|$)"),t=e.substr(e.indexOf("?")+1).match(n);
+return null!=t?t[2]:"";
+}
+return{
+parseUrl:r,
+join:e,
+addParam:n,
+getQuery:t
+};
+});define("biz_wap/utils/localstorage.js",[],function(){
+"use strict";
+var t={};
+return t=window.localStorage?{
+set:function(t,e){
+null!==this.get(t)&&this.remove(t),localStorage.setItem(t,e);
+},
+get:function(t){
+var e=localStorage.getItem(t);
+return void 0===e?null:e;
+},
+remove:function(t){
+localStorage.removeItem(t);
+},
+clear:function(){
+localStorage.clear();
+},
+each:function(t){
+for(var e,o=localStorage.length,n=0,t=t||function(){};o>n&&(e=localStorage.key(n),
+t.call(this,e,this.get(e))!==!1);n++)localStorage.length<o&&(o--,n--);
+}
+}:{
+set:function(){},
+get:function(){},
+remove:function(){},
+clear:function(){},
+each:function(){}
+};
+});define("biz_wap/utils/device.js",[],function(){
+"use strict";
+function s(s){
+{
+var e=s.match(/MQQBrowser\/(\d+\.\d+)/i),r=s.match(/QQ\/(\d+\.(\d+)\.(\d+)\.(\d+))/i)||s.match(/V1_AND_SQ_([\d\.]+)/),i=s.match(/MicroMessenger\/((\d+)\.(\d+))\.(\d+)/)||s.match(/MicroMessenger\/((\d+)\.(\d+))/),t=s.match(/Mac\sOS\sX\s(\d+[\.|_]\d+)/),n=s.match(/Windows(\s+\w+)?\s+?(\d+\.\d+)/),a=s.match(/Linux\s/),d=s.match(/MiuiBrowser\/(\d+\.\d+)/i),h=s.match(/MI-ONE/),c=s.match(/MI PAD/),w=s.match(/UCBrowser\/(\d+\.\d+(\.\d+\.\d+)?)/)||s.match(/\sUC\s/),u=s.match(/IEMobile(\/|\s+)(\d+\.\d+)/)||s.match(/WPDesktop/),b=s.match(/(ipod).*\s([\d_]+)/i),p=s.match(/(ipad).*\s([\d_]+)/i),v=s.match(/(iphone)\sos\s([\d_]+)/i),m=s.match(/Chrome\/(\d+\.\d+)/),f=s.match(/Mozilla.*Linux.*Android.*AppleWebKit.*Mobile Safari/),l=s.match(/(android)\s([\d\.]+)/i);
+s.indexOf("HTC")>-1;
+}
+if(o.browser=o.browser||{},o.os=o.os||{},window.ActiveXObject){
+var M=6;
+(window.XMLHttpRequest||s.indexOf("MSIE 7.0")>-1)&&(M=7),(window.XDomainRequest||s.indexOf("Trident/4.0")>-1)&&(M=8),
+s.indexOf("Trident/5.0")>-1&&(M=9),s.indexOf("Trident/6.0")>-1&&(M=10),o.browser.ie=!0,
+o.browser.version=M;
+}else s.indexOf("Trident/7.0")>-1&&(o.browser.ie=!0,o.browser.version=11);
+l&&(this.os.android=!0,this.os.version=l[2]),b&&(this.os.ios=this.os.ipod=!0,this.os.version=b[2].replace(/_/g,".")),
+p&&(this.os.ios=this.os.ipad=!0,this.os.version=p[2].replace(/_/g,".")),v&&(this.os.iphone=this.os.ios=!0,
+this.os.version=v[2].replace(/_/g,".")),n&&(this.os.windows=!0,this.os.version=n[2]),
+t&&(this.os.Mac=!0,this.os.version=t[1]),a&&(this.os.Linux=!0),s.indexOf("lepad_hls")>0&&(this.os.LePad=!0),
+c&&(this.os.MIPAD=!0),e&&(this.browser.MQQ=!0,this.browser.version=e[1]),r&&(this.browser.MQQClient=!0,
+this.browser.version=r[1]),i&&(this.browser.WeChat=!0,this.browser.mmversion=this.browser.version=i[1]),
+d&&(this.browser.MIUI=!0,this.browser.version=d[1]),w&&(this.browser.UC=!0,this.browser.version=w[1]||0/0),
+u&&(this.browser.IEMobile=!0,this.browser.version=u[2]),f&&(this.browser.AndriodBrowser=!0),
+h&&(this.browser.M1=!0),m&&(this.browser.Chrome=!0,this.browser.version=m[1]),this.os.windows&&(this.os.win64="undefined"!=typeof navigator.platform&&"win64"==navigator.platform.toLowerCase()?!0:!1),
+(this.os.Mac||this.os.windows||this.os.Linux)&&(this.os.pc=!0);
+var g={
+iPad7:"iPad; CPU OS 7",
+LePad:"lepad_hls",
+XiaoMi:"MI-ONE",
+SonyDTV:"SonyDTV",
+SamSung:"SAMSUNG",
+HTC:"HTC",
+VIVO:"vivo"
+};
+for(var O in g)this.os[O]=-1!==s.indexOf(g[O]);
+o.os.phone=o.os.phone||/windows phone/i.test(s),this.os.getNumVersion=function(){
+return parseFloat(o.os.version,"10");
+},this.os.hasTouch="ontouchstart"in window,this.os.hasTouch&&this.os.ios&&this.os.getNumVersion()<6&&(this.os.hasTouch=!1),
+o.browser.WeChat&&o.browser.version<5&&(this.os.hasTouch=!1),o.browser.getNumVersion=function(){
+return parseFloat(o.browser.version,"10");
+},o.browser.isFFCanOcx=function(){
+return o.browser.firefox&&o.browser.getNumVersion()>=3?!0:!1;
+},o.browser.isCanOcx=function(){
+return!(!o.os.windows||!o.browser.ie&&!o.browser.isFFCanOcx()&&!o.browser.webkit);
+},o.browser.isNotIESupport=function(){
+return!!o.os.windows&&(!!o.browser.webkit||o.browser.isFFCanOcx());
+},o.userAgent={},o.userAgent.browserVersion=o.browser.version,o.userAgent.osVersion=o.os.version,
+delete o.userAgent.version;
+}
+var o={};
+s.call(o,window.navigator.userAgent);
+var e=function(){
+var s=window.navigator.userAgent,e=null;
+if(o.os.android){
+if(o.browser.MQQ&&o.browser.getNumVersion()>=4.2)return!0;
+if(-1!=s.indexOf("MI2"))return!0;
+if(o.os.version>="4"&&(e=s.match(/MicroMessenger\/((\d+)\.(\d+))\.(\d+)/))&&e[1]>=4.2)return!0;
+if(o.os.version>="4.1")return!0;
+}
+return!1;
+}(),r=function(){
+var s=document.createElement("video");
+if("function"==typeof s.canPlayType){
+if("probably"==s.canPlayType('video/mp4; codecs="mp4v.20.8"'))return!0;
+if("probably"==s.canPlayType('video/mp4; codecs="avc1.42E01E"')||"probably"==s.canPlayType('video/mp4; codecs="avc1.42E01E, mp4a.40.2"'))return!0;
+}
+return!1;
+}(),i=function(){
+return console.info("[canSupportAutoPlay]",o.os.ios,o.os.getNumVersion()),o.os.ios&&o.os.getNumVersion()<10?!1:!0;
+}();
+return o.canSupportVideo=r||e,o.canSupportVideoMp4=r,o.canSupportH5Video=e,o.canSupportAutoPlay=i,
+o;
+});define("biz_common/dom/class.js",[],function(){
+"use strict";
+function s(s,a){
+return s.classList?s.classList.contains(a):s.className.match(new RegExp("(\\s|^)"+a+"(\\s|$)"));
+}
+function a(s,a){
+s.classList?s.classList.add(a):this.hasClass(s,a)||(s.className+=" "+a);
+}
+function e(a,e){
+if(a.classList)a.classList.remove(e);else if(s(a,e)){
+var c=new RegExp("(\\s|^)"+e+"(\\s|$)");
+a.className=a.className.replace(c," ");
+}
+}
+function c(c,l){
+s(c,l)?e(c,l):a(c,l);
+}
+return{
+hasClass:s,
+addClass:a,
+removeClass:e,
+toggleClass:c
+};
+});define("album/appmsg/album_item_pay_tpl.html.js",[],function(){
+return'<!-- 两行标题时，加 has-two-line-title类名 -->\n<li class="album__list-item js_album_item js_wx_tap_highlight wx_tap_cell"\n  data-msgid="<#=item.msgid#>"\n  data-itemidx="<#=item.itemidx#>"\n  data-link="<#=item.url#>"\n  data-title="<#=item.title#>"\n  data-is_read="<#=item.is_read#>"\n  role="link"\n  tabindex="0"\n  aria-labelledby="album__item-title_<#=item.msgid#>_<#=item.itemidx#> album__item-info_<#=item.msgid#>_<#=item.itemidx#>"\n>\n\n  <div class="album__item-content">\n    <div  aria-hidden="true" id="album__item-title_<#=item.msgid#>_<#=item.itemidx#>" class="album__item-title ellipsis_relate_title \n      weui-mask-ellipsis__wrp\n      <# if (item.is_pay_subscribe!=0) { #>\n        <# if (item.is_paid!=0) { #>\n          album_article_paid\n        <# } else { #>\n        <# } #>\n      <# } else { #>\n        album_article_default\n      <# } #>\n    ">\n      <div class="weui-mask-ellipsis__text">\n        <# if (isNumbered === 1) { #>\n        <span><#= item.pos_num #>. </span>\n        <# } #>\n        <span class="album__item-title-wrp"><#=item.title#></span>\n        <# if (item.is_pay_subscribe == 0) { #>\n          <span class="album__item-tag-free">免费</span>\n        <# } #>\n        <# if (+item.itemidx === fromItemidx && +item.msgid === fromMsgid ) { #>\n          <span class="album__item-tag-history">刚刚读过</span>\n        <# } #>\n        \n      </div>\n      <div class="weui-mask-ellipsis">\n        <div class="weui-mask-ellipsis__text">\n          <# if (isNumbered === 1) { #>\n          <span><#= item.pos_num #>. </span>\n          <# } #>\n          <span class="album__item-title-wrp"><#=item.title#></span>\n          <# if (item.is_pay_subscribe == 0) { #>\n            <span class="album__item-tag-free">免费</span>\n          <# } #>\n          <# if (+item.itemidx === fromItemidx && +item.msgid === fromMsgid ) { #>\n            <span class="album__item-tag-history">刚刚读过</span>\n          <# } #>\n        </div>\n        <div class="weui-mask-ellipsis__placeholder"></div>\n        <div class="weui-mask-ellipsis__extra">\n          <# if (item.is_pay_subscribe == 0) { #>\n            <span class="album__item-tag-free">免费</span>\n          <# } #>\n          <# if (+item.itemidx === fromItemidx && +item.msgid === fromMsgid ) { #>\n            <span class="album__item-tag-history">刚刚读过</span>\n          <# } #>\n        </div>\n      </div>\n    </div>\n    \n    <div class="album__item-info" aria-hidden="true" id="album__item-info_<#=item.msgid#>_<#=item.itemidx#>">\n      <# if (+item.msgid === lastReadArtMsgid && +item.itemidx === lastReadArtIdx) { #>\n      <span class="ablum-history-tag js_last_read">上次阅读</span>\n      <# } #>\n      <span class="js_article_create_time album__item-info-item"><#=item.create_time#></span>\n      <# if(item.is_pay_subscribe == 1 && isPaidAlbum === 0) #>\n      <span class="album__item-info-item">可试读<#= item.preview_percent #>%</span>\n      <# if (item.elected_comment_count > 0 && item.is_pay_subscribe == 0) { #>\n      <span class="album__item-info-item">精选留言 <#=item.elected_comment_count#></span>\n      <# } #>\n    </div>\n  </div>\n  <div class="album__item-img" aria-hidden="true" style="background-image: url(<#=item.cover_img_1_1#>);"></div>\n</li>\n';
+});var _slicedToArray=function(){
+function a(a,r){
+var t=[],i=!0,n=!1,o=void 0;
+try{
+for(var h,e=a[Symbol.iterator]();!(i=(h=e.next()).done)&&(t.push(h.value),!r||t.length!==r);i=!0);
+}catch(M){
+n=!0,o=M;
+}finally{
+try{
+!i&&e["return"]&&e["return"]();
+}finally{
+if(n)throw o;
+}
+}
+return t;
+}
+return function(r,t){
+if(Array.isArray(r))return r;
+if(Symbol.iterator in Object(r))return a(r,t);
+throw new TypeError("Invalid attempt to destructure non-iterable instance");
+};
+}();
+define("album/image/computeColor.js",[],function(){
+"use strict";
+function a(a,r,t){
+var i=Math.max(Math.max(a,r),t),n=Math.min(Math.min(a,r),t),o=i-n,h=void 0,e=void 0,M=void 0;
+return h=0===o?0:i===a?60*(r-t)/o:i===r?60*(t-a)/o+120:60*(a-r)/o+240,0>h&&(h+=360),
+M=(i+n)/510,e=0===o?0:o/255/(1-Math.abs(2*M-1)),h=Math.max(0,Math.min(h,360)),e=Math.max(0,Math.min(e,1)),
+M=Math.max(0,Math.min(M,1)),[h,e,M];
+}
+function r(a,r,t){
+var i=(1-Math.abs(2*t-1))*r,n=i*(1-Math.abs(a/60%2-1)),o=0,h=0,e=0;
+60>a?(o=i,h=n,e=0):120>a?(o=n,h=i,e=0):180>a?(o=0,h=i,e=n):240>a?(o=0,h=n,e=i):300>a?(o=n,
+h=0,e=i):(o=i,h=0,e=n);
+var M=t-i/2;
+o+=M,h+=M,e+=M;
+var m=255*o+.5,v=255*h+.5,s=255*e+.5;
+return m=Math.max(0,Math.min(m,255)),v=Math.max(0,Math.min(v,255)),s=Math.max(0,Math.min(s,255)),
+[m,v,s];
+}
+function t(a,r,t){
+var i=Math.max(Math.max(a,r),t),n=Math.min(Math.min(a,r),t),o=i-n,h=void 0,e=void 0,M=void 0;
+return h=0===o?0:i===a?60*(r-t)/o:i===r?60*(t-a)/o+120:60*(a-r)/o+240,0>h&&(h+=360),
+e=0===i?0:o/i,M=i/255,h=Math.max(0,Math.min(h,360)),e=Math.max(0,Math.min(e,1)),
+M=Math.max(0,Math.min(M,1)),[h,e,M];
+}
+function i(a,r,t){
+var i=t*r,n=i*(1-Math.abs(a/60%2-1)),o=0,h=0,e=0;
+60>a?(o=i,h=n,e=0):120>a?(o=n,h=i,e=0):180>a?(o=0,h=i,e=n):240>a?(o=0,h=n,e=i):300>a?(o=n,
+h=0,e=i):(o=i,h=0,e=n);
+var M=t-i;
+o+=M,h+=M,e+=M;
+var m=255*o+.5,v=255*h+.5,s=255*e+.5;
+return m=Math.max(0,Math.min(m,255)),v=Math.max(0,Math.min(v,255)),s=Math.max(0,Math.min(s,255)),
+[m,v,s];
+}
+function n(a,r,t){
+var i=(1-Math.abs(2*t-1))*r,n=t-i/2,o=i+n,h=n,e=o-h,M=void 0,m=void 0,v=void 0;
+return M=a,m=1e-6>o?0:e/o,v=o,M=Math.max(0,Math.min(M,360)),m=Math.max(0,Math.min(m,1)),
+v=Math.max(0,Math.min(v,1)),[M,m,v];
+}
+function o(a,r,t){
+var i=t*r,n=t-i,o=i+n,h=n,e=o-h,M=void 0,m=void 0,v=void 0;
+return M=a,v=(o+h)/2,m=1e-6>e?0:e/(1-Math.abs(2*v-1)),M=Math.max(0,Math.min(M,360)),
+m=Math.max(0,Math.min(m,1)),v=Math.max(0,Math.min(v,1)),[M,m,v];
+}
+function h(a,r,t){
+var i=a/180*m,n=Math.cos(i)*r,o=Math.sin(i)*r,h=n*t,e=o*t,M=1-t;
+return[h,e,M];
+}
+function e(a,r,t){
+var i=void 0,n=1-t;
+n=Math.max(0,Math.min(n,1));
+var o=180*Math.atan2(r,a)/m,h=o>=0?o:o+360;
+h=Math.max(0,Math.min(h,360));
+var e=Math.sqrt(a*a+r*r);
+return i=1e-6>n?0:e/n,i=Math.max(0,Math.min(i,1)),[h,i,n];
+}
+function M(a,r,n,M){
+var m=t(a,r,n),v=_slicedToArray(m,3),s=v[0],c=v[1],d=v[2],u=h(s,c,d),l=_slicedToArray(u,2),y=l[0],T=l[1],x=Math.sqrt(y*y+T*T),f=void 0,A=void 0,_=void 0,S=1-x,b=0,H=e(y,T,b),V=_slicedToArray(H,3),L=V[0],g=V[1],p=V[2],B=o(L,g,p),G=_slicedToArray(B,3),R=(G[0],
+G[1],G[2]),w=e(y,T,S),j=_slicedToArray(w,3),q=j[0],C=j[1],X=j[2],Y=o(q,C,X),Z=_slicedToArray(Y,3),E=(Z[0],
+Z[1],Z[2]);
+if(M>R){
+for(var I=0,O=x;O-I>1e-6;){
+var k=(I+O)/2,z=y*k/x,D=T*k/x,F=0,J=e(z,D,F),K=_slicedToArray(J,3),N=K[0],P=K[1],Q=K[2],U=o(N,P,Q),W=_slicedToArray(U,3),$=(W[0],
+W[1],W[2]);
+M>$?O=k:I=k;
+}
+var ar=y*O/x,rr=T*O/x,tr=0,ir=e(ar,rr,tr),nr=_slicedToArray(ir,3),or=nr[0],hr=nr[1],er=nr[2],Mr=i(or,hr,er),mr=_slicedToArray(Mr,3);
+f=mr[0],A=mr[1],_=mr[2];
+}else if(E>M){
+for(var I=0,O=x;O-I>1e-6;){
+var k=(I+O)/2,z=y*k/x,D=T*k/x,F=1-k,vr=e(z,D,F),sr=_slicedToArray(vr,3),N=sr[0],P=sr[1],Q=sr[2],cr=o(N,P,Q),dr=_slicedToArray(cr,3),$=(dr[0],
+dr[1],dr[2]);
+M>$?I=k:O=k;
+}
+var ar=y*O/x,rr=T*O/x,tr=1-O,ur=e(ar,rr,tr),lr=_slicedToArray(ur,3),or=lr[0],hr=lr[1],er=lr[2],yr=i(or,hr,er),Tr=_slicedToArray(yr,3);
+f=Tr[0],A=Tr[1],_=Tr[2];
+}else{
+for(var I=0,O=1-x;O-I>1e-6;){
+var k=(I+O)/2,z=y,D=T,F=k,xr=e(z,D,F),fr=_slicedToArray(xr,3),N=fr[0],P=fr[1],Q=fr[2],Ar=o(N,P,Q),_r=_slicedToArray(Ar,3),$=(_r[0],
+_r[1],_r[2]);
+M>$?O=k:I=k;
+}
+var ar=y,rr=T,tr=O,Sr=e(ar,rr,tr),br=_slicedToArray(Sr,3),or=br[0],hr=br[1],er=br[2],Hr=i(or,hr,er),Vr=_slicedToArray(Hr,3);
+f=Vr[0],A=Vr[1],_=Vr[2];
+}
+return[f,A,_];
+}
+var m=Math.acos(-1);
+return{
+RGBToHSL:a,
+HSLToRGB:r,
+RGBToHSV:t,
+HSVToRGB:i,
+HSLToHSV:n,
+HSVToHSL:o,
+HSVToXYZ:h,
+XYZToHSV:e,
+ChangeLightnessVisually:M
+};
+});function _classCallCheck(e,t){
+if(!(e instanceof t))throw new TypeError("Cannot call a class as a function");
+}
+var _extends=Object.assign||function(e){
+for(var t=1;t<arguments.length;t++){
+var i=arguments[t];
+for(var a in i)Object.prototype.hasOwnProperty.call(i,a)&&(e[a]=i[a]);
+}
+return e;
+},_createClass=function(){
+function e(e,t){
+for(var i=0;i<t.length;i++){
+var a=t[i];
+a.enumerable=a.enumerable||!1,a.configurable=!0,"value"in a&&(a.writable=!0),Object.defineProperty(e,a.key,a);
+}
+}
+return function(t,i,a){
+return i&&e(t.prototype,i),a&&e(t,a),t;
+};
+}();
+define("pages/modules/recommend_reason_article/recommend_reason_article.js",["biz_wap/ui/weui.js","biz_common/utils/string/html.js","biz_common/tmpl.js","biz_common/dom/event.js","biz_wap/jsapi/core.js","biz_wap/utils/ajax.js","biz_common/dom/class.js","pages/utils.js","biz_common/utils/url/parse.js","pages/modules/recommend_reason_article/msg_item.html.js","common/utils.js","pages/qq_video_info.js","biz_wap/utils/device.js","biz_wap/utils/mmversion.js","appmsg/emotion/emotion.js","pages/modules/related_tag/related_tag.js","biz_wap/jsapi/leaveReport.js","pages/modules/tag_report/tag_report.js","pages/modules/class_utils/check_exposed.js","pages/short_content/utils.js"],function(e,t,i,a){
+"use strict";
+function o(){
+return!v.isWechat||f.os.pc||v.is_wxwork?!1:v.isIOS&&v.ltVersion("7.0.15",!1)?!1:v.isAndroid&&window.clientversion<="27001337"?!1:v.isAndroid&&window.clientversion>"2700135F"&&window.clientversion<"27001400"?!1:!0;
+}
+function s(){
+return f.os.pc?v.isMac&&v.cpVersion("3.1.0",1,!0,"mac")?!0:v.isWindows&&v.getWindows()>="63030000"?!0:!1:!1;
+}
+function n(e){
+return"live"===e?void(v.isAndroid&&window.clientversion<"2700143c"||v.isIOS&&window.clientversion<"17001228"?window.weui.alert("请升级微信客户端版本后查看"):v.isWechat&&f.os.pc?window.weui.alert("当前版本暂不支持查看，请在手机上查看"):v.isInMiniProgram?window.weui.alert("暂不支持从小程序进入直播间"):(!v.isWechat||v.is_wxwork)&&a("请使用微信手机客户端打开")):"topic"===e?void(v.isAndroid&&window.clientversion<"2700143c"||v.isIOS&&window.clientversion<"17001228"?window.weui.alert("请升级微信客户端版本后查看"):v.isWechat&&f.os.pc?window.weui.alert("当前版本暂不支持查看，请在手机上查看"):v.isInMiniProgram?window.weui.alert("暂不支持从小程序进入直播间"):(!v.isWechat||v.is_wxwork)&&a("请使用微信手机客户端打开")):(("1"===e||0===e)&&v.isInMiniProgram&&window.weui.alert("暂不支持从小程序进入视频号"),
+v.isAndroid&&window.clientversion>"2700135F"&&window.clientversion<"27001400"?void window.weui.alert("当前版本暂不支持查看"):(v.isWechat&&f.os.pc?window.weui.alert("当前版本暂不支持查看，请在手机上查看"):(!v.isWechat||v.is_wxwork)&&a("请使用微信手机客户端打开"),
+void(!v.isWechat||f.os.pc||v.is_wxwork||p.jumpUrl("https://support.weixin.qq.com/update/",!0))));
+}
+e("biz_wap/ui/weui.js"),e("biz_common/utils/string/html.js");
+var r=e("biz_common/tmpl.js"),d=e("biz_common/dom/event.js"),c=e("biz_wap/jsapi/core.js"),m=e("biz_wap/utils/ajax.js"),l=e("biz_common/dom/class.js"),p=e("pages/utils.js"),u=e("biz_common/utils/url/parse.js"),h=e("pages/modules/recommend_reason_article/msg_item.html.js"),g=e("common/utils.js"),_=g.getInnerHeight(),y=e("pages/qq_video_info.js").mpVideoPlayer,f=e("biz_wap/utils/device.js"),v=e("biz_wap/utils/mmversion.js"),w=v.is_wxwork,x=f.os.pc&&!w,T=e(x?"appmsg/emotion/emotion.js":"appmsg/emotion/emotion.js"),b=e("pages/modules/related_tag/related_tag.js"),k=e("biz_wap/jsapi/leaveReport.js"),j=e("pages/modules/tag_report/tag_report.js"),L=j.report19649,P=j.report21071,I=e("pages/modules/class_utils/check_exposed.js"),S=e("pages/short_content/utils.js"),A=S.formatTime,C=(window.screen.width-32)/(16/9),D=new Map([[194,{
+scene:186
+}],[196,{
+scene:183
+}],[197,{
+scene:198
+}],[201,{
+scene:201
+}],[202,{
+scene:202
+}],[203,{
+scene:203
+}],[208,{
+scene:225
+}],[209,{
+scene:212
+}],[210,{
+scene:169
+}]]),R=p.getUrlParamsMap(location.href),V=["c1="+R.c1,"c2="+R.c2,"tag="+R.tag,"msg_type="+R.msg_type,"__biz="+R.__biz,"mid="+R.mid,"idx="+R.idx,"sn="+R.sn],E=function(e){
+for(var t=arguments.length<=1||void 0===arguments[1]?2:arguments[1],i=0,a=t-(e+"").length;a>i;i++)e="0"+e;
+return e+"";
+},M=function(e){
+for(var t=0,i=0;i<e.length;++i){
+var a=e.charAt(i);
+t+=null!=a.match(/[^\x00-\xff]/gi)?2:1;
+}
+return t;
+},F=function(){
+function e(t){
+_classCallCheck(this,e),this.dom={
+container:t.container,
+noMore:t.noMore,
+loading:t.loading
+},this.pageType=t.pageType?t.pageType:"recommendReason",this.articles=t.articles,
+this.data=t.data,this.renderedArticlesLen=0,this.loading=!1,this.articleDomList=[],
+this.videoDomList={},this.videoPlayerList={},this.isPlayingVideo=null,this.isPlayingVideoIdx=-1,
+this.canAutoPlay=!1,this.isTouchEnd=!0,this.isTap=!1,this.reportVideoInfo={
+startTime:0,
+endTime:0,
+playDuration:0,
+videoDuration:0,
+buffDuration:0
+},this.relatedTagsPos=2===this.data.tagType?3:4,this.isRelatedTagRendered=!1,this.exposer=null,
+this.hidden=!1,c.invoke("createWebViewForFastLoad",D.get(this.data.pageType||201),function(e){
+console.log("createWebViewForFastLoad",e);
+}),this.checkNetworkType();
+}
+return _createClass(e,[{
+key:"checkNetworkType",
+value:function(){
+var e=this,t={
+"network_type:fail":"fail",
+"network_type:edge":"2g/3g",
+"network_type:wwan":"2g/3g",
+"network_type:wifi":"wifi"
+};
+return"undefined"!=typeof top.window.WeixinJSBridge&&top.window.WeixinJSBridge.invoke?void c.invoke("getNetworkType",{},function(i){
+var a=t[i.err_msg]||"fail";
+e.data.isVideoPage&&(i.simtype&&1===+i.simtype||"wifi"===a)&&(e.canAutoPlay=!0),
+e.renderArticles(e.articles,!0),e.bindEvent();
+}):(this.renderArticles(this.articles,!0),void this.bindEvent());
+}
+},{
+key:"renderArticles",
+value:function(e){
+var t=this,i=arguments.length<=1||void 0===arguments[1]?!1:arguments[1],a=document.createElement("div"),o=document.createDocumentFragment(),s=[];
+a.insertAdjacentHTML("beforeend",e.map(function(e,i){
+var a=0,o="",s="",n="";
+return i+=t.articleDomList.length,e.title=e.title.html(),e.recommend_reason&&(e.recommend_reason.text_color=e.recommend_reason.text_color&&e.recommend_reason.text_color.replace(/#(..)(......)/,"#$2$1"),
+e.recommend_reason.background_color=e.recommend_reason.background_color&&e.recommend_reason.background_color.replace(/#(..)(......)/,"#$2$1"),
+e.recommend_reason.dark_mode_text_color=e.recommend_reason.dark_mode_text_color&&e.recommend_reason.dark_mode_text_color.replace(/#(..)(......)/,"#$2$1"),
+e.recommend_reason.dark_mode_background_color=e.recommend_reason.dark_mode_background_color&&e.recommend_reason.dark_mode_background_color.replace(/#(..)(......)/,"#$2$1")),
+e.top_comment&&e.top_comment.user_nickname&&e.top_comment.content&&(a=1,o=e.top_comment.user_nickname.html(),
+s=e.top_comment.content.replace(/\n/g,""),n=o+"："+T.encode(s)),r.tmpl(h,{
+idx:i,
+msg:e,
+pos:++t.renderedArticlesLen,
+readCnt:function(e){
+if(22===t.data.tagType){
+if(10>=e)return e;
+if(100>=e)return Math.floor(e/10)+"0+";
+if(1e3>=e)return Math.floor(e/100)+"00+";
+if(1e4>e)return Math.floor(e/1e3)+"000+";
+var i=Math.min(Math.floor(e/1e4),10);
+return"en"===window.LANG?i+"0k+":i+"万+";
+}
+if(e>1e5)return"en"===window.LANG?"100k+":"10万+";
+if(e>1e4&&1e5>=e){
+var a=void 0,o=void 0;
+return"en"===window.LANG?(a=""+e/1e3,o=a.indexOf("."),-1===o?a+"k":a.substr(0,o)+"."+a.charAt(o+1)+"k"):(a=""+e/1e4,
+o=a.indexOf("."),-1===o?a+"万":a.substr(0,o)+"."+a.charAt(o+1)+"万");
+}
+return e;
+}(e.read_cnt),
+canAutoPlay:t.canAutoPlay,
+videoDuration:function(e){
+return E(Math.floor(e/60))+":"+E(e%60);
+}(e.video_duration),
+itemShowType:e.item_show_type,
+pv:e.read_cnt,
+likeCnt:function(e){
+if(22===t.data.tagType){
+if(10>=e)return e;
+if(100>=e)return Math.floor(e/10)+"0+";
+if(1e3>=e)return Math.floor(e/100)+"00+";
+if(1e4>e)return Math.floor(e/1e3)+"000+";
+var i=Math.min(Math.floor(e/1e4),10);
+return"en"===window.LANG?i+"0k+":i+"万+";
+}
+if(e>1e5)return"en"===window.LANG?"100k+":"10万+";
+if(e>1e4&&1e5>=e){
+var a=void 0,o=void 0;
+return"en"===window.LANG?(a=""+e/1e3,o=a.indexOf("."),-1===o?a+"k":a.substr(0,o)+"."+a.charAt(o+1)+"k"):(a=""+e/1e4,
+o=a.indexOf("."),-1===o?a+"万":a.substr(0,o)+"."+a.charAt(o+1)+"万");
+}
+return e;
+}(e.like_cnt),
+commentCnt:function(e){
+if(22===t.data.tagType){
+if(10>=e)return e;
+if(100>=e)return Math.floor(e/10)+"0+";
+if(1e3>=e)return Math.floor(e/100)+"00+";
+if(1e4>e)return Math.floor(e/1e3)+"000+";
+var i=Math.min(Math.floor(e/1e4),10);
+return"en"===window.LANG?i+"0k+":i+"万+";
+}
+if(e>1e5)return"en"===window.LANG?"100k+":"10万+";
+if(e>1e4&&1e5>=e){
+var a=void 0,o=void 0;
+return"en"===window.LANG?(a=""+e/1e3,o=a.indexOf("."),-1===o?a+"k":a.substr(0,o)+"."+a.charAt(o+1)+"k"):(a=""+e/1e4,
+o=a.indexOf("."),-1===o?a+"万":a.substr(0,o)+"."+a.charAt(o+1)+"万");
+}
+return e;
+}(e.comment_cnt),
+friendReaded:e.friend_read_cnt,
+friendComment:e.friend_comment_cnt,
+hasTopComment:a,
+topCommentContent:s,
+topCommentText:n,
+topCommentLength:function(){
+return n.length?M(n):0;
+}(),
+vid:e.id&&e.id.vid||"",
+videoPlayerHeight:C,
+isDarkMode:window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches,
+tagType:t.data.tagType,
+massSendTime:A(e.send_time)
+},!0);
+}).join(""));
+var n=[];
+Array.from(a.children).forEach(function(e){
+if(1===e.nodeType){
+var i=e.dataset;
+e.entryTime=0,e.stayTime=0,e.clickTime=0,e.vid=i.vid,e.jumpUrl=i.jump_url.html(),
+s.push({
+item_show_type:i.item_show_type,
+url:e.jumpUrl
+}),t.articleDomList.push(e),n.push(e),o.appendChild(e);
+}
+}),!this.isRelatedTagRendered&&this.data.relatedTags.length&&this.renderRelatedTags(o),
+this.dom.container.appendChild(o);
+for(var d=0,m=n.length;m>d;d++){
+var l=n[d].querySelector(".article__extinfo");
+if(l&&!l.classList.contains("video__extinfo")){
+try{
+for(var p=l.children.length-1;l.offsetHeight>29&&p>-1;){
+var u=document.createComment(l.children[p].outerHTML);
+l.replaceChild(u,l.children[p]),p-=1;
+}
+}catch(g){}
+l.style.visibility="visible";
+}
+}
+this.canAutoPlay&&this.renderVideoPlayer(e),0===this.data.has_next||0===e.length?(this.dom.noMore.style.display=0===e.length?"none":"",
+this.dom.loading.style.display="none"):(this.dom.noMore.style.display="none",this.dom.loading.style.display=""),
+i?this.exposer=new I({
+domList:this.articleDomList
+}):this.exposer.updateDomList(this.articleDomList),this.updateEntryTimeStamp(),!this.exposer.notFoundFirstScreen&&this.checkArticleExposedStatus(),
+s.length&&c.invoke("downloadPageDataForFastLoad",{
+itemList:s
+},function(e){
+console.log("downloadPageDataForFastLoad",e);
+});
+}
+},{
+key:"renderRelatedTags",
+value:function(e){
+var t=document.createElement("div");
+this.articleDomList.length<=this.relatedTagsPos?e.append(t):e.insertBefore(t,e.querySelectorAll(".js_article")[this.relatedTagsPos]),
+new b({
+tagData:this.data,
+relaPos:this.articleDomList.length<=this.relatedTagsPos?this.articleDomList.length+1:this.relatedTagsPos,
+container:t,
+urlParams:R
+}),t.previousElementSibling&&l.hasClass(t.previousElementSibling,"article_item")&&l.addClass(t.previousElementSibling,"no_line"),
+this.isRelatedTagRendered=!0;
+}
+},{
+key:"renderVideoPlayer",
+value:function(e){
+var t=this;
+e.forEach(function(i,a){
+if(2===i.type){
+var o=p.getUrlParamsMap(i.jump_url.html()),s=i.id&&i.id.vid||"",n=t.articleDomList.length-e.length+a,r=new y({
+isTLpage:!0,
+container:"#WXPLAYABLEVIDEO"+n,
+is_mp_video:s.startsWith("wxv_")?1:0,
+oriVid:s,
+vid:s,
+ckey:i.ckey||"",
+__biz:o.__biz||"",
+mid:o.mid||"",
+idx:o.idx||"",
+width:document.querySelector(".js_article_item").offsetWidth,
+height:C,
+jsapiFullScreen:!1,
+canShareVideo:!1,
+pauseShowControll:!1,
+muted:!0,
+onPlayerReady:function(){
+setTimeout(function(){
+t.checkVideoPlayerExposedStatus();
+},500);
+},
+onBeginPlay:function(){
+t.isPlayingVideo=r,t.isPlayingVideoIdx=n;
+},
+onUserPlay:function(){
+t.isPlayingVideo=r;
+},
+onStatusChange:function(e,i){
+"end"===i.status&&(t.isPlayingVideo=null,t.videoDomList[n].isFirstPlay=!0);
+},
+onFirstBufferingTime:function(e,i){
+t.reportVideoInfo.buffDuration=1*i.bufferingTime;
+}
+});
+t.videoDomList[n]=t.articleDomList[n].querySelector(".js_video_player"),t.videoDomList[n].isFirstPlay=!0,
+t.videoPlayerList[n]=r;
+}
+});
+}
+},{
+key:"bindEvent",
+value:function(){
+var e=this,t=p.throttle(this.pageScroll,300).bind(this),i=p.debounce(this.checkVideoPlayerExposedStatus,500).bind(this);
+d.tap(this.dom.container,function(t){
+e.isTap=!0;
+for(var i=t.target;null!==i&&"js_articles"!==i.id&&!l.hasClass(i,"js_article");)i=i.parentNode;
+i&&l.hasClass(i,"js_article")&&!function(){
+var t=i.dataset,a=t.jump_url.html(),o=p.getUrlParamsMap(a);
+if(t.is_finder_item){
+var s=t.export_id,n=t.object_nonce_id,r="",d=t.media_type,m=t.export_id;
+e.jumpChannel(s,n,r,d,m),P({
+actionType:2,
+jumpUrl:"",
+pos:t.pos,
+sendTime:t.send_time,
+isReaded:t.is_read,
+itemShowType:t.item_show_type,
+pv:t.pv,
+likeCnt:t.like_cnt,
+friendReaded:t.friend_readed,
+friendComment:t.friend_comment,
+ifTopComment:t.if_top_comment,
+topCommentText:t.top_comment_text,
+topCommentLength:t.top_comment_length,
+isSubscribed:e.data.isSubscribed,
+tagId:e.data.tagId,
+showTag:e.data.tagName,
+insideTag:e.data.insideTag,
+c1:e.data.c1Report,
+c2:e.data.c2Report,
+vid:t.vid,
+tagName:e.data.tagName,
+titleType:e.data.title_type,
+canAutoPlay:e.canAutoPlay,
+pageType:e.data.pageType,
+cardId:R.cardid,
+expType:R.exptype,
+expSessionId:R.expsessionid,
+scene:o.scene,
+recInfo:e.data.mp_msgs[t.idx]&&e.data.mp_msgs[t.idx].rec_info||"",
+itemType:e.data.mp_msgs[t.idx]&&e.data.mp_msgs[t.idx].style_flag,
+recReason:e.data.mp_msgs[t.idx]&&e.data.mp_msgs[t.idx].recommend_reason&&e.data.mp_msgs[t.idx].recommend_reason.wording,
+finderFeedObjectId:s
+});
+}else i.clickTime=Date.now(),+t.idx===e.isPlayingVideoIdx&&(a=u.join(a,{
+play_time:e.videoPlayerList[t.idx].getCurrentTime()>>0
+},!0)),e.isPlayingVideo&&(e.resetVideo(e.isPlayingVideoIdx),e.isPlayingVideo=null,
+e.videoDomList[e.isPlayingVideoIdx].isFirstPlay=!0),v.isWechat?c.invoke("openWebViewUseFastLoad",{
+scene:o.scene,
+url:a,
+item_show_type:t.item_show_type,
+openType:0
+},function(e){
+console.log("openWebViewUseFastLoad",e),e&&e.err_msg&&-1===e.err_msg.indexOf("ok")&&p.goUrl(a);
+}):window.open(a),"recommendReason"===e.pageType&&P({
+actionType:2,
+jumpUrl:a,
+pos:t.pos,
+sendTime:t.send_time,
+isReaded:t.is_read,
+itemShowType:t.item_show_type,
+pv:t.pv,
+likeCnt:t.like_cnt,
+friendReaded:t.friend_readed,
+friendComment:t.friend_comment,
+ifTopComment:t.if_top_comment,
+topCommentText:t.top_comment_text,
+topCommentLength:t.top_comment_length,
+isSubscribed:e.data.isSubscribed,
+tagId:e.data.tagId,
+showTag:e.data.tagName,
+insideTag:e.data.insideTag,
+c1:e.data.c1Report,
+c2:e.data.c2Report,
+vid:t.vid,
+tagName:e.data.tagName,
+titleType:e.data.title_type,
+canAutoPlay:e.canAutoPlay,
+pageType:e.data.pageType,
+cardId:R.cardid,
+expType:R.exptype,
+expSessionId:R.expsessionid,
+scene:o.scene,
+recInfo:e.data.mp_msgs[t.idx]&&e.data.mp_msgs[t.idx].rec_info||"",
+itemType:e.data.mp_msgs[t.idx]&&e.data.mp_msgs[t.idx].style_flag,
+recReason:e.data.mp_msgs[t.idx]&&e.data.mp_msgs[t.idx].recommend_reason&&e.data.mp_msgs[t.idx].recommend_reason.wording,
+isTimelinePage:209===e.data.pageType
+}),"tag"===e.pageType&&L({
+eventType:2,
+vid:t.vid,
+pos:t.pos,
+jumpUrl:a,
+canAutoPlay:e.canAutoPlay,
+albumId:e.data.albumId,
+albumType:e.data.albumType,
+isSubscribed:e.data.isSubscribed,
+tagId:e.data.tagId,
+tagName:e.data.tagName,
+insideTag:e.data.insideTag,
+c1Report:e.data.c1Report,
+c2Report:e.data.c2Report,
+recInfo:e.data.mp_msgs[t.idx]&&e.data.mp_msgs[t.idx].rec_info||""
+});
+}();
+}),d.on(window,"scroll",function(){
+e.hidden||(t(),e.canAutoPlay&&e.isTouchEnd&&i());
+}),this.canAutoPlay&&d.on(window,"touchstart",function(){
+e.isTouchEnd=!1;
+}),this.canAutoPlay&&d.on(window,"touchend",function(){
+return e.isTouchEnd=!0,e.isTap?void(e.isTap=!1):void e.checkVideoPlayerExposedStatus();
+}),document.addEventListener("visibilitychange",function(){
+"visible"===document.visibilityState?e.updateEntryTimeStamp():e.updateLeaveTimeStamp();
+}),this.hidden||k.addReport(function(){
+e.articleDomList.slice(e.exposer.boundaryFirstIdx,e.exposer.boundaryLastIdx+1).forEach(function(e){
+e.stayTime+=Date.now()-e.entryTime;
+});
+var t={
+actions:e.articleDomList.filter(function(e){
+return e.stayTime>=2e3;
+}).map(function(e){
+var t=p.getUrlParamsMap(e.jumpUrl);
+return{
+bizuin:t.__biz,
+mid:t.mid,
+idx:t.idx,
+vid:e.vid,
+exposed_time:e.entryTime,
+clicked_time:e.clickTime
+};
+})
+};
+return V.push("reportjson="+JSON.stringify(t)),{
+reportUrl:"https://mp.weixin.qq.com/mp/recommendtag?action=act_report",
+reportData:V.join("&"),
+method:"POST"
+};
+});
+var a=function(t){
+for(var i=t.matches,a=e.articleDomList,o=0;o<a.length;o++){
+var s=a[o],n=s.querySelector(".album__item-tag");
+n&&(n.style.backgroundColor=i?n.dataset.darkBgColor:n.dataset.bgColor,n.style.color=i?n.dataset.darkTextColor:n.dataset.textColor);
+}
+},o=window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)");
+o&&("function"==typeof o.addEventListener?o.addEventListener("change",a):"function"==typeof o.addListener&&o.addListener(a));
+}
+},{
+key:"pageScroll",
+value:function(){
+this.exposer.checkExposed();
+for(var e=this.exposer.lastBoundaryFirstIdx;e<=this.exposer.lastBoundaryLastIdx;++e)if(e<this.exposer.boundaryFirstIdx||e>this.exposer.boundaryLastIdx){
+var t=this.articleDomList[e];
+t.stayTime+=Date.now()-t.entryTime;
+}
+for(var i=this.exposer.boundaryFirstIdx;i<=this.exposer.boundaryLastIdx;++i)if(i<this.exposer.lastBoundaryFirstIdx||i>this.exposer.lastBoundaryLastIdx){
+var t=this.articleDomList[i];
+t.entryTime=Date.now();
+}
+this.checkArticleExposedStatus();
+var a=this.dom.loading.getBoundingClientRect().top-_;
+_/2>=a&&this.data.has_next&&this.getMoreArticles();
+}
+},{
+key:"checkArticleExposedStatus",
+value:function(){
+var e=this;
+this.articleDomList.slice(this.exposer.boundaryFirstIdx,this.exposer.boundaryLastIdx+1).forEach(function(t){
+if(!t.isExposed){
+var i=t.dataset,a=i.jump_url.html(),o=p.getUrlParamsMap(a);
+t.isExposed=!0,"recommendReason"===e.pageType&&P({
+actionType:1,
+jumpUrl:a,
+pos:i.pos,
+sendTime:i.send_time,
+isReaded:i.is_read,
+itemShowType:i.item_show_type,
+pv:i.pv,
+likeCnt:i.like_cnt,
+friendReaded:i.friend_readed,
+friendComment:i.friend_comment,
+ifTopComment:i.if_top_comment,
+topCommentText:i.top_comment_text,
+topCommentLength:i.top_comment_length,
+isSubscribed:e.data.isSubscribed,
+tagId:e.data.tagId,
+showTag:e.data.tagName,
+insideTag:e.data.insideTag,
+c1:e.data.c1Report,
+c2:e.data.c2Report,
+vid:i.vid,
+tagName:e.data.tagName,
+titleType:e.data.title_type,
+canAutoPlay:e.canAutoPlay,
+pageType:e.data.pageType,
+cardId:R.cardid,
+expType:R.exptype,
+expSessionId:R.expsessionid,
+scene:o.scene,
+recInfo:e.data.mp_msgs[i.idx]&&e.data.mp_msgs[i.idx].rec_info||"",
+itemType:e.data.mp_msgs[i.idx]&&e.data.mp_msgs[i.idx].style_flag,
+recReason:e.data.mp_msgs[i.idx]&&e.data.mp_msgs[i.idx].recommend_reason&&e.data.mp_msgs[i.idx].recommend_reason.wording,
+finderFeedObjectId:i.export_id||""
+}),"tag"===e.pageType&&L({
+eventType:1,
+vid:i.vid,
+pos:i.pos,
+jumpUrl:a,
+canAutoPlay:e.canAutoPlay,
+albumId:e.data.albumId,
+albumType:e.data.albumType,
+isSubscribed:e.data.isSubscribed,
+tagId:e.data.tagId,
+tagName:e.data.tagName,
+insideTag:e.data.insideTag,
+c1Report:e.data.c1Report,
+c2Report:e.data.c2Report,
+recInfo:e.data.mp_msgs[i.idx]&&e.data.mp_msgs[i.idx].rec_info||""
+});
+}
+});
+}
+},{
+key:"checkVideoPlayerExposedStatus",
+value:function(){
+var e=this,t=2*_/3,i=[];
+Object.keys(this.videoDomList).forEach(function(a){
+var o=e.videoDomList[a],s=o.getBoundingClientRect();
+s.top>-(s.height/2)&&s.top<t-s.height/2?i.push(a):e.resetVideo(a);
+}),i.forEach(function(t,a){
+a===i.length-1?e.playVideo(t):e.resetVideo(t);
+});
+}
+},{
+key:"playVideo",
+value:function(e){
+this.videoDomList[e].isFirstPlay&&(this.videoDomList[e].isFirstPlay=!1,this.videoPlayerList[e]&&this.videoPlayerList[e].firstPlay(),
+this.reportVideoInfo.startTime=Date.now());
+}
+},{
+key:"resetVideo",
+value:function(e){
+if(!this.videoDomList[e].isFirstPlay){
+this.videoDomList[e].isFirstPlay=!0,this.videoPlayerList[e]&&this.videoPlayerList[e].resetVideo();
+var t=this.articleDomList[e].dataset,i=t.jump_url.html(),a=p.getUrlParamsMap(i);
+this.reportVideoInfo.endTime=Date.now(),this.reportVideoInfo.videoDuration=1e3*t.video_duration,
+this.reportVideoInfo.playDuration=1e3*this.articleDomList[e].querySelector(".js_remain_time").dataset.playDuration,
+"recommendReason"===this.pageType&&P(_extends({},this.reportVideoInfo,{
+actionType:3,
+jumpUrl:i,
+pos:t.pos,
+sendTime:t.send_time,
+isReaded:t.is_read,
+itemShowType:t.item_show_type,
+pv:t.pv,
+likeCnt:t.like_cnt,
+friendReaded:t.friend_readed,
+friendComment:t.friend_comment,
+ifTopComment:t.if_top_comment,
+topCommentText:t.top_comment_text,
+topCommentLength:t.top_comment_length,
+isSubscribed:this.data.isSubscribed,
+tagId:this.data.tagId,
+showTag:this.data.tagName,
+insideTag:this.data.insideTag,
+c1:this.data.c1Report,
+c2:this.data.c2Report,
+vid:t.vid,
+tagName:this.data.tagName,
+titleType:this.data.title_type,
+canAutoPlay:this.canAutoPlay,
+pageType:this.data.pageType,
+cardId:R.cardid,
+expType:R.exptype,
+expSessionId:R.expsessionid,
+scene:a.scene,
+recInfo:this.data.mp_msgs[t.idx]&&this.data.mp_msgs[t.idx].rec_info||"",
+itemType:this.data.mp_msgs[t.idx]&&this.data.mp_msgs[t.idx].style_flag,
+recReason:this.data.mp_msgs[t.idx]&&this.data.mp_msgs[t.idx].recommend_reason&&this.data.mp_msgs[t.idx].recommend_reason.wording
+})),"tag"===this.pageType&&L(_extends({},this.reportVideoInfo,{
+eventType:3,
+vid:t.vid,
+pos:t.pos,
+jumpUrl:i,
+canAutoPlay:this.canAutoPlay,
+albumId:this.data.albumId,
+albumType:this.data.albumType,
+isSubscribed:this.data.isSubscribed,
+tagId:this.data.tagId,
+tagName:this.data.tagName,
+insideTag:this.data.insideTag,
+c1Report:this.data.c1Report,
+c2Report:this.data.c2Report
+}));
+}
+}
+},{
+key:"cookGetUrl",
+value:function(e){
+var t="/mp/recommendtag?action=list"+(R.threecover?"&threecover="+R.threecover:"");
+switch(e){
+case"tag":
+var i=p.getUrlParamsMap(this.data.recomm_tag_page_url.html());
+Object.keys(i).forEach(function(e){
+t+="&"+e+"="+i[e];
+}),t+="&limit=10&paging="+this.data.paging;
+break;
+
+case"recommendReason":
+this.data.hotTopicTimeLine&&this.getTimelineParams();
+var a=this.data.sn||window.sn;
+t+="&c1="+this.data.c1+"&c2="+this.data.c2+"&tag="+window.encodeURIComponent(this.data.tag)+"&msg_type="+this.data.msg_type+"&__biz="+window.biz+"&mid="+window.mid+"&idx="+window.idx+"&sn="+a+"&limit=10&paging="+this.data.paging;
+}
+return t;
+}
+},{
+key:"getTimelineParams",
+value:function(){
+this.data.sn=p.getQuery("sn"),this.data.msg_type=1*p.getQuery("msg_type")||1;
+}
+},{
+key:"getMoreArticles",
+value:function(){
+var e=this;
+this.loading||(this.loading=!0,m({
+type:"GET",
+dataType:"json",
+url:this.cookGetUrl(this.pageType),
+success:function(t){
+t&&t.base_resp&&0===t.base_resp.ret?(e.data.has_next=t.has_next,e.data.paging=t.paging,
+e.data.mp_msgs=e.data.mp_msgs.concat(t.mp_msgs),e.renderArticles(t.mp_msgs)):window.weui.topTips("系统错误，请稍后再试"),
+e.loading=!1;
+},
+error:function(e){
+console.error(e),window.weui.topTips("系统错误，请稍后再试");
+}
+}));
+}
+},{
+key:"updateEntryTimeStamp",
+value:function(){
+this.articleDomList.slice(this.exposer.boundaryFirstIdx,this.exposer.boundaryLastIdx+1).forEach(function(e){
+e.entryTime=Date.now();
+});
+}
+},{
+key:"updateLeaveTimeStamp",
+value:function(){
+this.articleDomList.slice(this.exposer.boundaryFirstIdx,this.exposer.boundaryLastIdx+1).forEach(function(e){
+e.stayTime+=Date.now()-e.entryTime;
+});
+}
+},{
+key:"jumpChannel",
+value:function(e,t,i,a,r){
+if(console.log(this.data),o()){
+var d={
+action:"openFinderFeed",
+feedID:e,
+nonceID:t,
+notGetReleatedList:9===a?"1":0,
+shareScene:11,
+requestScene:16,
+reportExtraInfo:JSON.stringify({
+mp:{
+scene:1
+}
+})
+};
+c.invoke("openFinderView",{
+extInfo:d
+},function(e){
+console.log("openFinderDetailView",e);
+});
+}else if(s())if(r){
+var m=window.location.protocol||"https:";
+r=encodeURIComponent(r);
+var l=m+("//channels.weixin.qq.com/web/pages/feed?eid="+r);
+c.invoke("openUrlWithExtraWebview",{
+url:l,
+openType:1
+},function(e){
+console.log("openUrlWithExtraWebview",e);
+});
+}else n(a);else n(a);
+}
+}]),e;
+}();
+i.exports=F;
+});define("album/appmsg/album_item_tpl.html.js",[],function(){
+return'<!-- 两行标题时，加 has-two-line-title类名 -->\n<li class="album__list-item js_album_item js_wx_tap_highlight wx_tap_cell"\n  data-msgid="<#=item.msgid#>"\n  data-itemidx="<#=item.itemidx#>"\n  data-link="<#=item.url#>"\n  data-title="<#=item.title#>"\n  data-is_read="<#=item.is_read#>"\n>\n\n  <div class="album__item-content">\n    <div class="album__item-title ellipsis_relate_title \n      weui-mask-ellipsis__wrp \n      <# if (item.is_pay_subscribe!=0) { #>\n        <# if (item.is_paid!=0) { #>\n        album_article_paid\n        <# } else { #>\n        album_article_pay\n        <# } #>\n      <# } else { #>\n        album_article_default\n      <# } #>\n    "\n    role="link"\n    tabindex="0"\n    aria-labelledby="album__item-title_<#=item.msgid#>_<#=item.itemidx#> album__item-info_<#=item.msgid#>_<#=item.itemidx#>"\n    >\n      <div aria-hidden="true" class="weui-mask-ellipsis__text">\n        <# if (isNumbered === 1) { #>\n        <span><#= item.pos_num #>. </span>\n        <# } #>\n        <span class="album__item-title-wrp"><#=item.title#></span>\n        <# if (item.is_pay_subscribe == 1) { #>\n          <# if (item.is_paid == 1) { #>\n          <span class="pay__tag">已付费</span>\n          <# } else { #>\n          <span class="unpay__tag">付费</span>\n          <# } #>\n        <# } #>\n      </div>\n      <div aria-hidden="true" class="weui-mask-ellipsis">\n        <div id="album__item-title_<#=item.msgid#>_<#=item.itemidx#>" class="weui-mask-ellipsis__text">\n          <# if (isNumbered === 1) { #>\n          <span><#= item.pos_num #>. </span>\n          <# } #>\n          <span class="album__item-title-wrp"><#=item.title#></span>\n          <# if (item.is_pay_subscribe == 1) { #>\n            <# if (item.is_paid == 1) { #>\n            <span class="pay__tag">已付费</span>\n            <# } else { #>\n            <span class="unpay__tag">付费</span>\n            <# } #>\n          <# } #>\n        </div>\n        <div class="weui-mask-ellipsis__placeholder"></div>\n        <div aria-hidden="true" class="weui-mask-ellipsis__extra">\n          <# if (item.is_pay_subscribe == 1) { #>\n            <# if (item.is_paid == 1) { #>\n            <span class="pay__tag">已付费</span>\n            <# } else { #>\n            <span class="unpay__tag">付费</span>\n            <# } #>\n          <# } #>\n        </div>\n      </div>\n    </div>\n    \n    <div class="album__item-info" aria-hidden="true" id="album__item-info_<#=item.msgid#>_<#=item.itemidx#>">\n      <# if (+item.msgid === lastReadArtMsgid && +item.itemidx === lastReadArtIdx) { #>\n      <span class="ablum-history-tag js_last_read">上次阅读</span>\n      <# } #>\n      <span class="js_article_create_time album__item-info-item"><#=item.create_time#></span>\n      <# if (item.is_pay_subscribe == 1) { #>\n        <# if (item.pay_cnt > 0) { #>\n        <span class="js_article_pay_num album__item-info-item">付费 <#=item.pay_num_wording#></span>\n        <# } #>\n      <# } else if (+item.read_count > 0) { #>\n        <span class="js_article_read_num album__item-info-item">阅读 <#=item.read_num_wording#></span>\n      <# } #>\n      <# if (item.elected_comment_count > 0 && item.is_pay_subscribe == 0) { #>\n      <span class="album__item-info-item">精选留言 <#=item.elected_comment_count#></span>\n      <# } #>\n    </div>\n  </div>\n  <div class="album__item-img" aria-hidden="true" style="background-image: url(<#=item.cover_img_1_1#>);"></div>\n</li>\n\n';
+});define("common/utils.js",["biz_common/utils/url/parse.js","biz_wap/jsapi/core.js","biz_wap/utils/wapsdk.js","biz_wap/utils/storage.js","biz_wap/utils/device.js","biz_wap/utils/mmversion.js","biz_wap/jsapi/log.js","biz_wap/utils/jsmonitor_report.js","biz_common/dom/event.js"],function(e){
+"use strict";
+function t(){
+return"1"===i.getQuery("isNativePage")||"2"===i.getQuery("isNativePage");
+}
+function n(e){
+var t=arguments.length<=1||void 0===arguments[1]?50:arguments[1],n=void 0;
+return function(){
+for(var i=arguments.length,o=Array(i),r=0;i>r;r++)o[r]=arguments[r];
+var s=this,a=function(){
+n=null,e.apply(s,o);
+};
+n||(n=setTimeout(a,t));
+};
+}
+var i=e("biz_common/utils/url/parse.js"),o=e("biz_wap/jsapi/core.js"),r=e("biz_wap/utils/wapsdk.js"),s=e("biz_wap/utils/storage.js"),a=e("biz_wap/utils/device.js"),c=e("biz_wap/utils/mmversion.js"),u=e("biz_wap/jsapi/log.js"),g=e("biz_wap/utils/jsmonitor_report.js"),p=e("biz_common/dom/event.js");
+try{
+"undefined"==typeof parent.window.hasListenMpPageAction&&(parent.window.hasListenMpPageAction=!1),
+"undefined"==typeof parent.window.hasListenStateChange&&(parent.window.hasListenStateChange=!1);
+}catch(l){}
+var d=[],f=[],w=new s("history4secondopen"),m="from",h=!1,_={
+status:"loading"
+},v=[],y={
+isNativePage:t,
+isNewNativePage:function(){
+return"2"===i.getQuery("isNativePage");
+},
+isOldNativePage:function(){
+return"1"===i.getQuery("isNativePage");
+},
+__useWcSlPlayer:!1,
+isWcSlPage:function(){
+return y.__useWcSlPlayer;
+},
+getPlayerType:function(){
+return y.isWcSlPage()?3:t()?2:1;
+},
+getParam:function(e){
+if(!e)return null;
+var t=location.href.match(new RegExp("(\\?|&)"+e+"=([^&]+)"));
+return t?t[2]:null;
+},
+insertAfter:function(e,t){
+var n=t.parentNode;
+n.lastChild===t?n.appendChild(e):n.insertBefore(e,t.nextSibling);
+},
+getInnerHeight:function(){
+var e=window.getInnerHeight&&window.getInnerHeight();
+return e||window.innerHeight||document.documentElement.clientHeight;
+},
+getInnerWidth:function(){
+return window.innerWidth||document.documentElement.clientWidth;
+},
+getScrollTop:function(){
+return document.documentElement.scrollTop||window.pageYOffset||document.body.scrollTop;
+},
+getDocumentHeight:function(){
+return document.body.scrollHeight;
+},
+getElementActualTop:function(e){
+var t=e.getBoundingClientRect(),n=t.top-this.getScrollTop();
+return n;
+},
+getElementTop:function(e){
+return e.getBoundingClientRect().top;
+},
+getElementHeight:function(e){
+return e.getBoundingClientRect().height;
+},
+isScrollEnd:function(e){
+return this.getScrollTop()+this.getInnerHeight()+e>=this.getDocumentHeight();
+},
+listenStateChange:function(){
+var e=arguments.length<=0||void 0===arguments[0]?{}:arguments[0];
+f.push(e.cb);
+try{
+if(parent.window.hasListenStateChange)return;
+}catch(t){}
+o.on("activity:state_change",function(e){
+f.forEach(function(t){
+t(e);
+});
+});
+try{
+parent.window.hasListenStateChange=!0;
+}catch(t){}
+},
+listenMpPageAction:function(e){
+d.push(e);
+try{
+if(parent.window.hasListenMpPageAction)return;
+}catch(t){}
+o.on("onMPPageAction",function(e){
+d.forEach(function(t){
+t(e);
+});
+});
+try{
+parent.window.hasListenMpPageAction=!0;
+}catch(t){}
+},
+getIosMainVersion:function(){
+var e=navigator.userAgent.toLowerCase().match(/cpu iphone os (.*?) like mac os/);
+return e&&e[1]&&parseInt(e[1].split("_")[0],10);
+},
+report120081:function(e,t){
+r.jsmonitor({
+id:120081,
+key:e,
+value:t
+});
+},
+loadNewPageKeepingHistoryStackIfSecOpen:function(e){
+window.__second_open__&&"string"==typeof e&&/^https?:\/\/mp.weixin.qq.com\//.test(e)&&w.set(m,location.href,Date.now()+1e4),
+location.href=e.replace(/#.*$/,"")+"#wechat_redirect";
+},
+initNewPageHistoryStackFromSecOpen:function(){
+var e=w.get(m);
+if(e&&"string"==typeof e&&/^https?:\/\/mp.weixin.qq.com\//.test(e)&&(w.remove(m),
+history&&history.replaceState&&history.pushState)){
+var t=location.href;
+try{
+history.replaceState({
+__mock_secopen_history_stack_reload__:1
+},"",e),history.pushState({
+__mock_secopen_history_stack_reload__:1
+},"",t);
+}catch(n){
+console.error("[initNewPageHistoryStackFromSecOpen]",n);
+}
+}
+h||(h=!0,window.addEventListener("popstate",function(e){
+e.state&&1===e.state.__mock_secopen_history_stack_reload__&&location.reload();
+}));
+},
+initWebCompt:function(e,t){
+var n=function(){
+for(;v.length;){
+var e=v.shift();
+e(_);
+}
+};
+if(a.os.iphone&&c.isWechat&&a.os.getNumVersion()>=10.3&&(c.gtVersion("7.0.14",1)&&a.os.getNumVersion()<15||c.gtVersion("8.0.7"))||a.os.android&&c.isWechat&&c.gtVersion("7.0.15",1)&&a.os.getNumVersion()>=5)document.addEventListener("WeixinOpenTagsReady",function(){
+_={
+status:"ready"
+},n();
+}),document.addEventListener("WeixinOpenTagsError",function(e){
+_={
+status:"error",
+error:e&&e.detail&&e.detail.errMsg
+},n();
+}),o.invoke("handleMPPageAction",{
+action:"wxConfig",
+appid:"wxmpfakeid",
+webComptList:e
+},function(i){
+console.log("wx config web compt result",e,i),u.info("wx config web compt result",e,JSON.stringify(i)),
+i&&i.err_msg&&-1===i.err_msg.indexOf(":ok")&&(_={
+status:"error",
+error:i.err_msg
+},n()),"function"==typeof t&&t(i);
+});else{
+var i={
+err_msg:"handleMPPageAction:fail_webcompt unsupported"
+};
+console.log("wx config web compt result",e,i),u.info("wx config web compt result",e,JSON.stringify(i)),
+_={
+status:"error",
+error:i.err_msg
+},n(),"function"==typeof t&&t(i);
+}
+},
+initWebComptForWcSlVideoSharePage:function(){
+var e=function(e){
+-1!==e.err_msg.indexOf(":ok")?y.initNewPageHistoryStackFromSecOpen():(window.__failConfigWxOpen=!0,
+u.info("failed to config wxopen: res not ok"),g.setSum(221515,a.os.iphone?7:8,1),
+window.WX_BJ_REPORT&&window.WX_BJ_REPORT.BadJs&&e&&window.WX_BJ_REPORT.BadJs.report("WcSlPlayer:CfgError",(window.__second_open__?"secopen:":"h5:")+JSON.stringify(e)));
+};
+if(c.isAndroid){
+var t=c.getInner();
+t>"27001037"&&"27001060">t||t>="27001100"?y.initWebCompt(["wxOpen","wxAd"],e):c.gtVersion("7.0.15",1)?(y.initWebCompt(["wxAd"]),
+window.__failConfigWxOpen=!0,u.info("failed to config wxopen: android version check failed (gt 7.0.15)")):(window.__failConfigWxOpen=!0,
+u.info("failed to config wxopen: android version check failed"));
+}else c.gtVersion("7.0.15",1)&&-1===[4,30].indexOf(1*window.ascene)?y.initWebCompt(["wxOpen","wxAd"],e):(window.__failConfigWxOpen=!0,
+u.info("failed to config wxopen: ios version check failed"));
+},
+getWebComptStatus:function(e){
+return"function"!=typeof e?_:("loading"===_.status?v.push(e):e(_),!0);
+},
+supportImmersiveMode:c.isWechat&&!c.isInMiniProgram&&(c.isIOS&&c.gtVersion("8.0.9",1)||c.isAndroid&&c.gtVersion("8.0.9",1)),
+debounce:n,
+bindDebounceScrollEvent:function(e){
+var t=arguments.length<=1||void 0===arguments[1]?window:arguments[1],i=arguments.length<=2||void 0===arguments[2]?50:arguments[2],o=n(e,i);
+p.on(t,"scroll",o);
+},
+once:function(e){
+return function(){
+if(e){
+for(var t=arguments.length,n=Array(t),i=0;t>i;i++)n[i]=arguments[i];
+var o=e.apply(this,n);
+return e=null,o;
+}
+};
+}
+};
+return y;
+});define("biz_wap/utils/setMpInfo.js",["biz_wap/jsapi/core.js"],function(n,r,t){
+"use strict";
+function e(n,r){
+a(i,n),o.invoke("currentMpInfo",i,r);
+}
+var o=n("biz_wap/jsapi/core.js"),i={},a=null;
+a="function"==typeof Object.assign?Object.assign:function(){
+var n=Array.prototype.slice.call(arguments);
+if(null==n[0])throw new TypeError("Cannot convert undefined or null to object");
+for(var r=Object(n[0]),t=1;t<n.length;t++){
+var e=n[t];
+if(null!=e)for(var o in e)Object.prototype.hasOwnProperty.call(e,o)&&(r[o]=e[o]);
+}
+return r;
+},t.exports={
+currentMpInfo:e
+};
+});function _typeof(e){
+return e&&"undefined"!=typeof Symbol&&e.constructor===Symbol?"symbol":typeof e;
+}
+function _classCallCheck(e,o){
+if(!(e instanceof o))throw new TypeError("Cannot call a class as a function");
+}
+var _createClass=function(){
+function e(e,o){
+for(var n=0;n<o.length;n++){
+var i=o[n];
+i.enumerable=i.enumerable||!1,i.configurable=!0,"value"in i&&(i.writable=!0),Object.defineProperty(e,i.key,i);
+}
+}
+return function(o,n,i){
+return n&&e(o.prototype,n),i&&e(o,i),o;
+};
+}();
+define("pages/modules/footer_pay/footer_pay.js",["page/appmsg_new/mod/pay.css","page/album/buy-success-edu.css","biz_wap/ui/weui.js","biz_common/tmpl.js","biz_wap/utils/mmversion.js","biz_wap/jsapi/core.js","biz_common/dom/class.js","appmsg/log.js","biz_wap/utils/jsmonitor_report.js","pages/modules/web_transfer/web_transfer_JSAPI.js","biz_common/dom/event.js","appmsg/pay_report_utils.js","appmsg/loading.js","pages/mod/bottom_modal.js","appmsg/pay_read/pay_confirm_tpl.html.js","pages/modules/footer_pay/tpl/buy_success_edu_tpl.html.js","pages/modules/footer_pay/tpl/price_detail_tpl.html.js","appmsg/pay_read/buy_wecoin_btn_tpl.html.js","pages/modules/footer_pay/footer_pay.html.js","common/color/light.js","common/color/dark.js","common/color/background_color.js","common/color/color-blend.js","common/color/hex-to-rgba.js"],function(e){
+"use strict";
+e("page/appmsg_new/mod/pay.css"),e("page/album/buy-success-edu.css"),e("biz_wap/ui/weui.js");
+var o=e("biz_common/tmpl.js"),n=e("biz_wap/utils/mmversion.js"),i=e("biz_wap/jsapi/core.js"),t=e("biz_common/dom/class.js"),a=e("appmsg/log.js"),s=e("biz_wap/utils/jsmonitor_report.js"),r=e("pages/modules/web_transfer/web_transfer_JSAPI.js"),c=e("biz_common/dom/event.js"),d=e("appmsg/pay_report_utils.js"),p=e("appmsg/loading.js"),l=e("pages/mod/bottom_modal.js"),u=e("appmsg/pay_read/pay_confirm_tpl.html.js"),m=e("pages/modules/footer_pay/tpl/buy_success_edu_tpl.html.js"),w=e("pages/modules/footer_pay/tpl/price_detail_tpl.html.js"),_=e("appmsg/pay_read/buy_wecoin_btn_tpl.html.js"),g=e("pages/modules/footer_pay/footer_pay.html.js"),y=e("common/color/light.js"),f=e("common/color/dark.js"),b=e("common/color/background_color.js"),h=e("common/color/color-blend.js"),v=h.normal,k=e("common/color/hex-to-rgba.js"),T=k.hexToRgba,j=k.rgbaToHex,x=function(e,o){
+var n=v(T(y["BG-0"]),{
+r:0,
+b:0,
+g:0,
+a:.6
+}),i=v(T(f["BG-0"]),{
+r:0,
+b:0,
+g:0,
+a:.6
+}),t=j("rgba("+n.r+", "+n.g+", "+n.b+", "+n.a+")").slice(0,7),a=j("rgba("+i.r+", "+i.g+", "+i.b+", "+i.a+")").slice(0,7);
+window.weui.dialog({
+content:e,
+className:"pay-fail-dialog",
+buttons:[{
+label:"知道了",
+onClick:function(){
+b.set({
+nav:[y["BG-0"],f["BG-0"]],
+top:[y["BG-0"],f["BG-0"]],
+bottom:[y["BG-0"],f["BG-0"]]
+}),o&&o();
+}
+}],
+isAndroid:!1
+}),b.set({
+nav:[t,a]
+});
+},C=function(){
+function e(o){
+_classCallCheck(this,e),this.dom={
+container:o.container,
+loadingState:document.getElementsByClassName("js_button_loading")
+},this.data={
+topWords:o.topWords,
+bottomWords:o.bottomWords,
+buttonWords:o.buttonWords,
+needChangeClass:o.needChangeClass,
+needWecoinIcon:o.needWecoinIcon,
+canShowPanel:o.canShowPanel||!0,
+isFirstPay:!!o.isFirstPay,
+pcTips:o.pcTips||"微信扫一扫付费阅读本文",
+wecoinTitle:o.wecoinTitle||"兑换全文",
+wecoinErrorTitle:o.wecoinErrorTitle||"微信豆不足，兑换全文还需兑换",
+wecoinAmount:o.wecoinAmount,
+prepurchasedWecoin:o.prepurchasedWecoin||0,
+originalWecoin:o.originalWecoin,
+productId:o.productId||window.productPayPackage&&window.productPayPackage.product_id,
+productType:o.productType||1,
+productSign:o.productSign||"",
+albumId:o.albumId||"",
+tagSubscribe:o.tagSubscribe||{}
+},console.log(this.data),window.payEduTips={
+firstWecoinRecharge:0,
+userImgUrl:"",
+userNickname:""
+},this.render(),this.bindEvent();
+}
+return _createClass(e,[{
+key:"render",
+value:function(){
+var e=document.createElement("div"),n=o.tmpl(g,{
+topWords:this.data.topWords,
+bottomWords:this.data.bottomWords,
+buttonWords:this.data.buttonWords,
+needChangeClass:this.data.needChangeClass,
+needWecoinIcon:this.data.needWecoinIcon,
+pcTips:this.data.pcTips,
+originalWecoin:this.data.originalWecoin,
+prepurchasedWecoin:this.data.prepurchasedWecoin||0
+});
+e.innerHTML=n,this.dom.container.appendChild(e.firstChild);
+}
+},{
+key:"bindEvent",
+value:function(){
+var e=this,g=this.data,y=g.canShowPanel,f=g.wecoinAmount,b=g.wecoinTitle,h=g.isFirstPay,v=g.wecoinErrorTitle,k=g.productId,T=g.productType,j=g.productSign,C=g.albumId;
+console.log("wecoinAmount1",f),d.setGvar({
+payType:1,
+pageType:1,
+albumId:C,
+price:10*f
+});
+var P=function(){
+var e=document.getElementById("js_pay_panel_bottom");
+e&&(e.className=y?"pay pay__notice pay__notice_show":"pay pay__notice");
+};
+c.on(window,"scroll",P),y&&!function(){
+var w="isPaid-"+window.biz+"-"+window.mid+"-"+window.idx,g=document.getElementById("js_pay_panel_bottom"),A=n.isGooglePlay,I=n.isWindows||n.isMac&&!n.isIOS,W=n.isWindowsWechat||n.isMacWechat;
+if(P(y),n.isAndroid&&"1"===window.localStorage.getItem(w),I||W)for(var E=document.getElementsByClassName("js_pay_qrcode"),S="/mp/paysubqrcode?action="+(C?"get_album_qrcode":"get_article_qrcode")+"&__biz="+window.biz+"&mid="+window.mid+"&idx="+window.idx+"&sn="+window.sn+"&album_id="+C+"#wechat_redirect",B=0,O=E.length;O>B;B++)E[B].src=S;
+n.isInMiniProgram&&t.addClass(g.getElementsByClassName("js_pay_btn")[0],"btn_disabled");
+var z=function(o){
+1===o?p.show("加载中"):2===o&&Array.prototype.forEach.call(e.dom.loadingState,function(e){
+e.style.display="",e.nextElementSibling.style.display="none";
+});
+},H=function(o){
+1===o?p.hide():2===o&&Array.prototype.forEach.call(e.dom.loadingState,function(e){
+e.style.display="none",e.nextElementSibling.style.display="";
+});
+},q=2,N=!1,M=0,G=null,D=null,L=null,V=null,F=null,R=function(){
+d.reportPayAppmsg(1),i.invoke("handleMPPageAction",{
+action:"paySuccess",
+fullUrl:window.location.href,
+itemShowType:10
+},function(e){
+console.log("paySuccess res",e),N=!1,e.err_msg.indexOf("ok")>-1,window.localStorage&&window.localStorage.setItem&&window.localStorage.setItem(w,"1"),
+window.__second_open__?window.location.href=window.location.href+"&r="+Math.random()+"#wechat_redirect":window.location.reload();
+}),e.data.tagSubscribe&&e.data.tagSubscribe.toggleSubscribe&&(e.data.tagSubscribe.toggleSubscribe(1),
+e.data.tagSubscribe.show()),window.localStorage.setItem("paySuc","1");
+},U=null,J=null,X=null,Y=null;
+a("[Appmsg] pay process 3 can_use_wecoin="+window.can_use_wecoin),window.can_use_wecoin&&!function(){
+var e=document.createElement("div");
+e.innerHTML=o.tmpl(u,{
+price:f,
+title:b
+});
+var t=document.createElement("div"),s=document.createElement("div");
+s.className="weui-half-screen-dialog__btn-area",V=document.createElement("a"),V.innerText="兑换",
+V.className="weui-btn weui-btn_primary";
+var w=document.createElement("div");
+w.className="weui-half-screen-dialog__attachment-wrp";
+var g=document.createElement("a");
+g.className="weui-half-screen-dialog__attachment-link",g.setAttribute("href","javascript:;"),
+g.innerHTML="付费须知";
+var y=document.createElement("a");
+y.className="weui-half-screen-dialog__attachment-link",y.setAttribute("href","javascript:;"),
+y.innerHTML="常见问题",s.appendChild(V),t.appendChild(s),w.appendChild(g),w.appendChild(y),
+t.appendChild(w);
+var v=document.createElement("div");
+v.innerHTML="（1）你使用微信豆兑换的内容为同一合集下的图文内容，不支持转让；在公众号未按照约定的数量进行更新时，你的微信豆将按比例退回，此外你使用的微信豆将无法退回。此外，我们特别提醒你，根据《微信豆充值协议》之约定，微信豆不支持退款或者反向兑换为人民币。请在兑换付费合集前确认你的需求，谨慎兑换。<br/>（2）付费合集中的内容，其著作权归属以公众号所载明的作者信息或其他符合法律规定的权利说明为准。微信仅提供技术服务，不对该等内容的著作权或内容的适当性提供任何担保或保证。",
+X=new l(v,{
+title:"付费须知",
+top:window.innerHeight-384+"px",
+scroll2Hide:!1,
+onHide:function(){
+U.show();
+}
+});
+var j=document.createElement("div");
+j.innerHTML=o.tmpl(m,{
+price:f,
+title:b
+});
+var x=document.createElement("div"),C=document.createElement("div");
+C.className="weui-half-screen-dialog__btn-area buy-success-edu__foot";
+var P=document.createElement("a");
+P.innerText="我知道了",P.className="weui-btn weui-btn_default",C.appendChild(P),x.appendChild(C),
+Y=new l(j,{
+hasHeader:!1,
+top:window.innerHeight-507+"px",
+footerEl:x,
+scroll2Hide:!1,
+onHide:function(){
+R();
+}
+}),c.on(P,"tap",function(){
+Y.hide();
+}),c.on(g,"tap",function(e){
+e&&e.preventDefault(),d.reportPayAppmsg(21),U.hide(),X.show();
+}),c.on(y,"tap",function(e){
+e&&e.preventDefault(),d.reportPayAppmsg(17),i.invoke("openUrlWithExtraWebview",{
+url:"https://kf.qq.com/touch/product/WXDB_app.html",
+openType:1
+}),U.hide();
+});
+var A=function(){
+p.show("加载中");
+var e=Math.round(new Date/1e3);
+i.invoke("consumeWCCoin",{
+buff:F,
+businessId:2
+},function(o){
+console.log("consumeWCCoin res",o),N=!1,p.hide(),o&&o.err_msg&&o.err_msg.indexOf("ok")>-1?!function(){
+d.reportPay(e,1,F);
+var o=function n(){
+r({
+url:"/mp/paysub?action=query_pay_status&product_type="+T+"&product_id="+k,
+type:"GET",
+dataType:"json",
+scope:"bizmppaysub",
+needAjax:!1,
+success:function(e){
+e&&e.base_resp&&0===e.base_resp.ret&&1*e.pay_status===1?h?Y.show():(window.weui.toast("已兑换",750),
+R()):setTimeout(n,200);
+}
+});
+};
+o();
+}():o&&o.err_msg&&o.err_msg.indexOf("fail")>-1&&(window.weui.alert("兑换失败，请稍后再试"),
+p.hide());
+});
+};
+a("[Appmsg] pay process 4 on payBtn tap"),c.on(V,"tap",function(){
+a("[Appmsg] pay process 5 wecoinAmountRemain="+M+" wecoin_amount="+f),f>M?(U.hide(),
+setTimeout(function(){
+d.reportPayAppmsg(19),a("[Appmsg] pay process 6.1 buyWCCoin");
+var e=function(e){
+p.hide(),e&&e.err_msg&&e.err_msg.indexOf("ok")>-1&&(G.innerText=e.balance,M=1*e.balance,
+L.innerText=f-M,f>M?U.show():A());
+},o=f>M?f-M:0;
+i.invoke("buyWCCoin",{
+businessId:2,
+scene:4,
+panelShowType:"present",
+diffWecoinCount:o
+},function(o){
+console.log(o),o&&o.err_msg&&(o.err_msg.indexOf("ok")>-1?n.isIOS&&n.ltVersion("8.0.17")||n.isAndroid&&n.ltVersion("8.0.17")?window.payEduTips.firstWecoinRecharge?J.show():(p.show("加载中"),
+i.invoke("getWCCoinBalance",{},e)):i.invoke("showWCCoinFirstBuyCoinTips",{
+alwaysDarkMode:!1
+},function(){
+p.show("加载中"),i.invoke("getWCCoinBalance",{},e);
+}):o.err_msg.indexOf("cancel")>-1?U.show():window.weui.alert("充值失败，请稍后再试"));
+});
+},250)):(U.hide(),A());
+}),U=new l(e,{
+title:"",
+extClass:"pay__bottom-modal",
+hasBtn:!0,
+btnSlot:o.tmpl(_,{}),
+autoHeight:!0,
+scroll2Hide:!1,
+footerEl:t,
+cb:function(){},
+onHide:function(){
+N=!1;
+},
+btnClickCb:function(){
+U.hide();
+var e=function(e){
+p.hide(),e&&e.err_msg&&e.err_msg.indexOf("ok")>-1&&(G.innerText=e.balance,M=1*e.balance,
+f>M?L.innerText=f-M:(D.innerText=b,L.innerText=f,V.innerText="兑换"),U.show());
+};
+setTimeout(function(){
+d.reportPayAppmsg(14);
+var o=f>M?f-M:0;
+i.invoke("buyWCCoin",{
+businessId:2,
+scene:3,
+panelShowType:"present",
+diffWecoinCount:o
+},function(o){
+console.log(o),o&&o.err_msg&&(o.err_msg.indexOf("ok")>-1?n.isIOS&&n.ltVersion("8.0.17")||n.isAndroid&&n.ltVersion("8.0.17")?window.payEduTips.firstWecoinRecharge?J.show():(p.show("加载中"),
+i.invoke("getWCCoinBalance",{},e)):i.invoke("showWCCoinFirstBuyCoinTips",{
+alwaysDarkMode:!1
+},function(){
+p.show("加载中"),i.invoke("getWCCoinBalance",{},e);
+}):o.err_msg.indexOf("cancel")>-1&&U.show());
+});
+},250);
+}
+}),G=document.getElementById("js_wecoin_remain"),D=document.getElementById("js_wecoin_title"),
+L=document.getElementById("js_wecoin_price");
+}();
+var $=function(e,o){
+if(!o){
+if(!I&&N)return;
+if(d.reportPayAppmsg(9),n.isInMiniProgram)return void d.reportPayAppmsg(18);
+if(A)return d.reportPayAppmsg(18),void window.weui.alert("暂不支持Google Play支付，前往微信官网下载最新版微信，即可正常付费");
+if((n.is_wxwork||!n.isWechat)&&!I)return d.reportPayAppmsg(18),void window.weui.alert("请在微信内进行付费");
+N=!0;
+}
+var t=e.currentTarget;
+if(1===window.is_transfer_msg)return d.reportPayAppmsg(18),window.weui.confirm("此内容来自于迁移前的账号，不支持付费",{
+buttons:[{
+type:"default",
+label:"确定"
+}]
+}),void(N=!1);
+if(window.is_teenager)return d.reportPayAppmsg(18),x("青少年模式下不可付费"),void(N=!1);
+if(window.is_temp_url)d.reportPayAppmsg(18),x("临时链接无需付费，请谨慎分享，避免内容泄露",function(){
+N=!1,location.replace(""+location.origin+location.pathname+location.search+"&temp_is_paid=1"+location.hash);
+});else if(I||W){
+var u=function(){
+d.reportPayAppmsg(18);
+var e="js_pay_qrcode_wrap",o=t.parentNode.getElementsByClassName("js_pay_fee_display")[0];
+if("block"===o.style.display)return{
+v:void 0
+};
+t.classList.contains("js_article_bottom")&&o.classList[t.getBoundingClientRect().top<300?"add":"remove"]("pay__notice-qrcode_bottom");
+var n=function i(n){
+if("none"!==o.style.display){
+for(var a=n.target;!(null===a||a.classList&&a.classList.contains(e)||a===t);)a=a.parentNode;
+a!==t&&(null!==a&&a.classList.contains(e)||(o.style.display="none",c.off(window,"click",i)));
+}
+};
+c.on(window,"click",n),o.style.display="block";
+}();
+if("object"===("undefined"==typeof u?"undefined":_typeof(u)))return u.v;
+}else{
+if(n.isIOS&&n.ltVersion("8.0.8")||n.isAndroid&&n.ltVersion("8.0.8")&&window.can_use_wecoin)return d.reportPayAppmsg(18),
+void location.replace("https://support.weixin.qq.com/update/");
+if(n.isIOS&&n.ltVersion("7.0.10")||n.isAndroid&&n.ltVersion("7.0.10")&&!window.can_use_wecoin)return d.reportPayAppmsg(18),
+void location.replace("https://support.weixin.qq.com/update/");
+if(n.isIOS&&n.ltVersion("8.0.20")||n.isAndroid&&n.ltVersion("8.0.18"))return window.weui.alert("当前微信版本较低，无法付费，请更新微信至最新版本"),
+void s.setSum(322693,8,1);
+n.isAndroid&&"1"===window.localStorage.getItem(w),a("[Appmsg] pay process payFunc call 3"),
+window.can_use_wecoin?!function(){
+var e=document.createElement("div");
+e.innerHTML='<div class="pay__wecoin-edu-profile">\n                  <div class="pay__wecoin-edu-title">可在「我>个人信息>微信豆」页面，查看微信豆消费明细。</div>\n                  <div class="pay__wecoin-edu-pic">\n                    <div class="pay__wecoin-edu-avatar"><img src="'+window.payEduTips.userImgUrl+'"></div>\n                    <div class="pay__wecoin-edu-nic">'+window.payEduTips.userNickname+"</div>\n                  </div>\n                </div>";
+var o=document.createElement("a");
+o.innerText="我知道了",o.className="weui-btn weui-btn_default";
+var t=function(){
+J.hide(),p.show("加载中"),i.invoke("getWCCoinBalance",{},function(e){
+p.hide(),e&&e.err_msg&&e.err_msg.indexOf("ok")>-1?(G.innerText=e.balance,M=1*e.balance,
+U.show(),d.reportPayAppmsg(16)):N=!1;
+}),window.payEduTips.firstWecoinRecharge=0;
+};
+c.on(o,"tap",t),J=new l(e,{
+hasHeader:!1,
+top:window.innerHeight-467+"px",
+footerEl:o,
+extClass:"pay__edu-modal",
+onHide:function(){
+t();
+}
+}),z(q),r({
+url:"/mp/paysub?action=create_wecoin_order",
+type:"POST",
+dataType:"json",
+scope:"bizmppaysub",
+needAjax:!1,
+data:{
+__biz:window.biz,
+mid:window.mid,
+idx:window.idx,
+sn:window.sn,
+version:window.clientversion.htmlDecode(),
+is_from_pc:I,
+product_type:T,
+product_id:k,
+product_sign:j
+},
+async:!0,
+success:function(e){
+if(e&&e.base_resp&&0===e.base_resp.ret)F=e.encode_resp_buff,n.isIOS&&n.ltVersion("8.0.27")||n.isAndroid&&n.ltVersion("8.0.27")?i.invoke("getWCCoinBalance",{},function(e){
+console.log("getWCCoinBalance callback",e),e&&e.err_msg&&e.err_msg.indexOf("ok")>-1?e.balance>=f?(G.innerText=e.balance,
+M=1*e.balance,D.innerText=b,L.innerText=f,V.innerText="兑换",d.reportPayAppmsg(16),
+f>0?U.show():!function(){
+N=!0,p.show("订单查询中");
+var e=Math.round(new Date/1e3);
+d.reportPay(e,1,F);
+var o=function n(){
+r({
+url:"/mp/paysub?action=query_pay_status&product_type="+T+"&product_id="+k,
+type:"GET",
+dataType:"json",
+success:function(e){
+e&&e.base_resp&&0===e.base_resp.ret&&1*e.pay_status===1?(N=!1,p.hide(),h?Y.show():(window.weui.toast("已兑换",750),
+R())):setTimeout(n,200);
+}
+});
+};
+o();
+}()):(d.reportPayAppmsg(15),console.log(f),console.log(e.balance),G.innerText=e.balance,
+M=1*e.balance,D.innerText=v,L.innerText=f-e.balance,V.innerText="去充值",U.show()):(N=!1,
+window.weui.alert("系统错误，请稍后再试"));
+}):!function(){
+var e=Math.round(new Date/1e3);
+i.invoke("consumeWCCoin",{
+buff:F,
+businessId:2,
+mode:2,
+productWecoinPrice:f,
+productTitle:b,
+productTitleInsufficient:"微信豆不足，兑换合集还需",
+consumeTipsWording:["• 付费合集内容著作权归属公众号作者，微信仅提供技术服务","• 付费合集兑换后不支持转让","• 若作者未按约定的数量更新时，消费的微信豆将按比例退回","• 微信豆充值后不支持退款"]
+},function(o){
+N=!1,o&&o.err_msg&&(o.err_msg.indexOf("ok")>-1?!function(){
+d.reportPay(e,1,F);
+var o=function n(){
+r({
+url:"/mp/paysub?action=query_pay_status&product_type="+T+"&product_id="+k,
+type:"GET",
+dataType:"json",
+scope:"bizmppaysub",
+needAjax:!1,
+success:function(e){
+e&&e.base_resp&&0===e.base_resp.ret&&1*e.pay_status===1?(N=!1,p.hide(),h?Y.show():(window.weui.toast("已兑换",750),
+R())):setTimeout(n,200);
+}
+});
+};
+o();
+}():o.err_msg.indexOf("fail")>-1?(d.reportPayAppmsg(16),window.weui.alert("兑换失败，请稍后重试")):o.err_msg.indexOf("insufficient")>-1?d.reportPayAppmsg(15):o.err_msg.indexOf("cancel")>-1);
+});
+}();else switch(N=!1,H(q),d.reportPayAppmsg(18),e&&e.base_resp&&e.base_resp.ret){
+case 202600:
+x("合集已被删除");
+break;
+
+case 202602:
+x("你已兑换过该文章，无需重复兑换",R);
+break;
+
+case 202605:
+x("此合集因违规被封禁，不支持付费");
+break;
+
+case 202607:
+x("暂不支持Google Play支付，前往微信官网下载最新版微信，即可正常付费");
+break;
+
+case 202608:
+location.replace("https://support.weixin.qq.com/update/");
+break;
+
+case 202609:
+x("你已成为该公众号的黑名单用户，暂时无法付费");
+break;
+
+case 202612:
+x("此账号付费功能已被封禁，不支持付费");
+break;
+
+case 202616:
+x("不支持付费");
+break;
+
+case 202617:
+x("青少年模式下不可付费");
+break;
+
+case 202618:
+x("账号迁移不能付费");
+break;
+
+case 202621:
+x("你已退款，不能再兑换");
+break;
+
+case 202622:
+x("文章属于付费合集，不能单独兑换");
+break;
+
+case 202625:
+x("此合集因违规被封禁，不支持付费");
+break;
+
+case 202626:
+x("合集内容为空，无需兑换合集");
+break;
+
+case 202627:
+x("合集当前没有需要付费的内容，无需兑换合集");
+break;
+
+default:
+x("订单创建失败，请稍后再试");
+}
+},
+error:function(){
+N=!1,window.weui.alert("系统错误，请稍后再试");
+},
+complete:function(){
+H(q);
+}
+});
+}():(p.show("生成订单中"),r({
+url:"/mp/paysub?action=create_order",
+type:"POST",
+dataType:"json",
+scope:"bizmppaysub",
+needAjax:!1,
+data:{
+__biz:window.biz,
+mid:window.mid,
+idx:window.idx,
+sn:window.sn,
+version:window.clientversion.htmlDecode(),
+is_from_pc:window.jump2pay
+},
+async:!0,
+success:function(e){
+if(e&&e.base_resp&&0===e.base_resp.ret)if(n.isIOS){
+var o=e.iap_info;
+i.invoke("requestVirtualPayment",{
+appID:o.appid,
+priceLevel:o.price_level,
+busiType:23,
+busiId:o.busi_id,
+productDesc:o.desc,
+sign:o.sign,
+extInfo:o.ext_info
+},function(e){
+console.log("requestVirtualPayment res: ",e),e.err_msg.indexOf("ok")>-1?R():e.err_msg.indexOf("cancel")>-1?(N=!1,
+console.log("pay cancel")):e.err_msg.indexOf("fail")>-1?(N=!1,window.weui.alert(e.err_msg.slice(e.err_msg.indexOf("fail")+4))):(N=!1,
+window.weui.alert(e.err_msg));
+}),window.payShowIAPPrice&&!function(){
+var e=setTimeout(function(){
+e=null,console.log("getIAPProductInfo timeout");
+},3e3),o=Date.now();
+i.invoke("handleMPPageAction",{
+action:"getIAPProductInfo",
+productId:window.payProductId
+},function(n){
+if("number"==typeof e){
+clearTimeout(e);
+var i=Date.now()-o;
+if(console.log("getIAPProductInfo",n,i+"ms"),-1!==n.err_msg.indexOf(":ok")){
+if(window.payProductId!==n.productId)return;
+window.IAPProductInfo?window.IAPProductInfo.currencyCode!==n.currencyCode:window.oriProductFee&&"CNY"!==n.currencyCode;
+}
+}
+});
+}();
+}else{
+var t=e.midas_info;
+window.h5sdk.directPay({
+sandbox:!!t.sandbox,
+ontimeout:function(){
+N=!1,window.weui.alert("兑换超时，请稍后再试");
+},
+methods:{
+onPayEnd:function(e,o){
+console.log("directPay res: ",e,o),1===e?R():-1===e&&/:cancel$/.test(o)?(N=!1,console.log("pay cancel")):(N=!1,
+window.weui.alert("兑换失败，请稍后再试"));
+}
+}
+},{
+pf:t.pf,
+appid:t.appid,
+type:"goods",
+openid:t.openid,
+extend:{
+hideOfferName:1
+},
+goodstokenurl:t.url_params,
+usewxappid:"1",
+wx_h5pay:0,
+direct_pay_channel:"wechat"
+});
+}else switch(N=!1,e&&e.base_resp&&e.base_resp.ret){
+case 202600:
+x("文章已被删除");
+break;
+
+case 202601:
+x("由于文章被取消原创，不可付费阅读");
+break;
+
+case 202602:
+x("你已兑换过该文章，无需重复兑换",R);
+break;
+
+case 202604:
+x(e.appmsg_ban_reason_desc?"此内容因"+e.appmsg_ban_reason_desc+"已被封禁，不支持付费":"此内容因违规已被封禁，不支持付费");
+break;
+
+case 202607:
+x("暂不支持Google Play支付，前往微信官网下载最新版微信，即可正常付费");
+break;
+
+case 202608:
+location.replace("https://support.weixin.qq.com/update/");
+break;
+
+case 202609:
+x("你已成为该公众号的黑名单用户，暂时无法付费");
+break;
+
+case 202612:
+x("此账号付费功能已被封禁，不支持付费");
+break;
+
+case 202617:
+x("青少年模式下不可付费"),s.setSum(232209,0,1);
+break;
+
+case 202621:
+x("你已退款，不能再兑换");
+break;
+
+case 202622:
+x("文章属于付费合集，不能单独兑换");
+break;
+
+default:
+x("订单创建失败，请稍后再试");
+}
+},
+error:function(){
+N=!1,window.weui.alert("系统错误，请稍后再试");
+},
+complete:function(){
+p.hide();
+}
+}));
+}
+};
+c.tap(g.getElementsByClassName("js_pay_btn")[0],$);
+}();
+var A=document.createElement("div");
+A.innerHTML=o.tmpl(w,{
+wecoinAmount:this.data.wecoinAmount,
+originalWecoin:this.data.originalWecoin,
+prepurchasedWecoin:this.data.prepurchasedWecoin
+});
+var I=new l(A,{
+title:"金额明细",
+top:window.innerHeight-260+"px",
+scroll2Hide:!1
+});
+c.on(document.getElementById("js_price_detail"),"click",function(){
+I.show();
+});
+}
+},{
+key:"hide",
+value:function(){
+this.dom.container.style.display="none";
+}
+},{
+key:"show",
+value:function(){
+this.dom.container.style.display="";
+}
+}]),e;
+}();
+return C;
+});function _classCallCheck(e,t){
+if(!(e instanceof t))throw new TypeError("Cannot call a class as a function");
+}
+var _createClass=function(){
+function e(e,t){
+for(var a=0;a<t.length;a++){
+var s=t[a];
+s.enumerable=s.enumerable||!1,s.configurable=!0,"value"in s&&(s.writable=!0),Object.defineProperty(e,s.key,s);
+}
+}
+return function(t,a,s){
+return a&&e(t.prototype,a),s&&e(t,s),t;
+};
+}();
+define("pages/modules/continue_read/continue_read.js",["page/appmsg_new/mod/continue_read.css","page/album/buy-success-edu.css","biz_wap/ui/weui.js","biz_common/tmpl.js","biz_common/dom/event.js","pages/modules/continue_read/continue_read.html.js","pages/short_content/utils.js"],function(e){
+"use strict";
+e("page/appmsg_new/mod/continue_read.css"),e("page/album/buy-success-edu.css"),e("biz_wap/ui/weui.js");
+var t=e("biz_common/tmpl.js"),a=e("biz_common/dom/event.js"),s=e("pages/modules/continue_read/continue_read.html.js"),n=e("pages/short_content/utils.js"),d=n.openUrl,i=function(){
+function e(t){
+_classCallCheck(this,e),this.dom={
+container:t.container||document.getElementById("js_footer_continue_read"),
+loadingState:document.getElementsByClassName("js_button_loading")
+},this.data={
+lastReadTitle:t.lastReadTitle,
+lastReadArtIdx:t.lastReadArtIdx,
+lastReadArtMsgid:t.lastReadArtMsgid||"",
+lastReadPosNum:t.lastReadPosNum||"",
+lastReadUrl:t.lastReadUrl||"",
+firstReadUrl:t.firstReadUrl||"",
+canShowPanel:t.canShowPanel||!0
+},console.log(this.data),this.render(),this.bindEvent();
+}
+return _createClass(e,[{
+key:"render",
+value:function(){
+var e=document.createElement("div"),a=t.tmpl(s,{
+lastReadTitle:this.data.lastReadTitle,
+lastReadArtMsgid:this.data.lastReadArtMsgid,
+lastReadPosNum:this.data.lastReadPosNum,
+lastReadUrl:this.data.lastReadUrl,
+firstReadUrl:this.data.firstReadUrl
+});
+e.innerHTML=a,this.dom.container.appendChild(e.firstChild);
+var n=this.data,d=n.canShowPanel,i=n.lastReadArtMsgid,l=document.getElementById("js_continue_read_bottom");
+l.className=d?"continue_read continue_read_show "+(i?"has_last_read":""):"continue_read";
+}
+},{
+key:"bindEvent",
+value:function(){
+a.on(document.getElementById("js_continue_read_btn"),"click",function(e){
+var t=e.target,a=t.getAttribute("data-url").htmlDecode();
+-1===a.indexOf("#rd")&&-1===a.indexOf("#wechat_redirect")&&(a+="#wechat_redirect"),
+d({
+url:a,
+itemShowType:0,
+canFastLoad:!0
+});
+});
+}
+},{
+key:"hide",
+value:function(){
+this.dom.container.style.display="none";
+}
+},{
+key:"show",
+value:function(){
+this.dom.container.style.display="";
+}
+},{
+key:"setStatus",
+value:function(e){
+var t=e.lastReadPosNum||"",a=e.lastReadTitle||"",s=document.querySelector(".js_last_read_bar"),n=document.querySelector(".js_last_read_info");
+if(s&&n&&a){
+var d=document.getElementById("js_continue_read_bottom"),i=t?t+". "+a:""+a;
+n.innerHTML=i.htmlDecode(),s.classList.contains("last_read_show")||s.classList.add("last_read_show"),
+d.classList.contains("has_last_read")||d.classList.add("has_last_read");
+}
+var l=document.getElementById("js_continue_read_btn"),o=e.lastReadUrl||"";
+l&&o&&(l.setAttribute("data-url",o),l.innerHTML="继续阅读");
+}
+}]),e;
+}();
+return i;
+});

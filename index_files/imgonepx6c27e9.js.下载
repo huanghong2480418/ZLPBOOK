@@ -1,0 +1,1656 @@
+define("pages/audition_tpl.html.js",[],function(){
+return'<div id="js_music_dialog">\n    <div class="weui-mask"></div>\n    <div class="weui-dialog">\n        <div class="weui-dialog__bd"><#=msg#></div>\n        <div class="weui-dialog__ft">\n            <a href="javascript:void(0);" class="weui-dialog__btn weui-dialog__btn_primary js_submit">我知道了</a>\n        </div>\n    </div>\n</div>';
+});define("pages/modules/feedback/feedback.html.js",[],function(){
+return'<!-- 负反馈按钮 -->\n<div class="com-feedback-btn__icon js_feedback_btn">\n  <!-- 负反馈浮层 -->\n  <div class="com-feedback_dialog_wrp js_feedback_container">\n    <div class="com-weui-mask js_mask"></div>\n    <!-- 底部时弹窗向上，加.com-feedback_dialog_pos_top -->\n    <div class="com-feedback_dialog js_feedback_dialog">\n      <div class="com-feedback_dialog_hd weui-flex">\n        <div class="weui-flex__item com-feedback_dialog_title"><#=title#></div>\n        <button type="button" class="weui-btn weui-btn_primary weui-btn_mini weui-btn_disabled js_submit">确定</button>\n      </div>\n      <div class="com-feedback_dialog_bd">\n        <ul class="com-feedback_tag_list js_feedback_opt_list">\n          <!-- 选中时tag加.com-feedback_tag_selected -->\n          <# options.forEach(function (item, idx) { #>\n          <li class="com-feedback_tag_item js_opt_item" data-idx="<#=idx#>"><#=item.option#></li>\n          <# }); #>\n        </ul>\n      </div>\n    </div>\n  </div>\n</div>\n';
+});define("appmsg/emotion/caret.js",[],function(e,t){
+"use strict";
+var t={};
+return t.get=function(e){
+var t=0;
+if(document.selection){
+e.focus();
+var a=document.selection.createRange();
+a.moveStart("character",-e.value.length),t=Sel.text.length;
+}else(e.selectionStart||"0"==e.selectionStart)&&(t=e.selectionStart);
+return t;
+},t.set=function(e,t){
+if(e.setSelectionRange)e.focus(),e.setSelectionRange(t,t);else if(e.createTextRange){
+var a=e.createTextRange();
+a.collapse(!0),a.moveEnd("character",t),a.moveStart("character",t),a.select();
+}
+},t;
+});define("biz_wap/utils/ajax_load_js.js",["biz_wap/utils/ajax.js","biz_wap/utils/localstorage.js"],function(e){
+"use strict";
+function n(e){
+var n=d(e.url,e.version),o=function(){},i=function(){};
+if("function"==typeof e.onSuccess&&(o=e.onSuccess),"function"==typeof e.onError&&(i=e.onError),
+c(e.win,n))return void o({
+code:1,
+queueIndex:0
+});
+if(e.useCache){
+var a=u(e.url,e.version);
+if(a&&t({
+win:e.win,
+funcStr:a,
+useCache:!1,
+url:e.url,
+version:e.version
+}),c(e.win,n))return void o({
+code:2,
+queueIndex:0
+});
+}
+if(S.callbackQueue.push({
+options:e,
+onSuccess:o,
+onError:i
+}),"undefined"==typeof S.jsLoadState[n]&&(S.jsLoadState[n]=-1),-1==S.jsLoadState[n]){
+var s=e.url;
+s+=-1==s.indexOf("?")?"?"+S.customerParam+"="+e.version:"&"+S.customerParam+"="+e.version,
+r({
+originUrl:e.url,
+version:e.version,
+url:s,
+key:n
+});
+}
+}
+function r(e){
+S.jsLoadState[e.key]=1,w({
+url:e.url,
+notJoinUrl:!0,
+timeout:1e4,
+type:"POST",
+dataType:"text",
+noXRequestedWidthHeader:!0,
+success:function(n){
+if(1==S.jsLoadState[e.key]){
+S.jsLoadState[e.key]=-1;
+var r=!0;
+r=n?t({
+win:null,
+funcStr:n,
+useCache:!0,
+url:e.originUrl,
+version:e.version
+}):!1,o(r?{
+code:3,
+type:"suc",
+funcStr:n
+}:{
+code:51,
+type:"err"
+});
+}
+},
+error:function(){
+1==S.jsLoadState[e.key]&&(S.jsLoadState[e.key]=-1,o({
+code:52,
+type:"err"
+}));
+},
+complete:function(){
+1==S.jsLoadState[e.key]&&(S.jsLoadState[e.key]=-1,o({
+code:53,
+type:"err"
+}));
+}
+});
+}
+function t(e){
+var n=e.win||window,r=!0;
+try{
+n.eval(e.funcStr),r=!0;
+}catch(t){
+r=!1;
+}
+return r?(s({
+url:e.url,
+version:e.version,
+win:n
+}),e.useCache&&a(e.url,e.version,e.funcStr),!0):(l({
+url:e.url,
+version:e.version,
+win:n
+}),i(e.url),!1);
+}
+function o(e){
+for(var n=0,r=S.callbackQueue.length;r>n;n++){
+var o=S.callbackQueue[n],u=o.options,i=u.win,a=d(u.url,u.version);
+"suc"==e.type?(e.funcStr&&!c(i,a)&&t({
+win:i,
+funcStr:e.funcStr,
+useCache:!1,
+url:u.url,
+version:u.version
+}),o.onSuccess({
+code:e.code,
+queueIndex:n
+})):o.onError({
+code:e.code,
+queueIndex:n
+});
+}
+S.callbackQueue=[];
+}
+function u(e,n){
+var r=f(e),t=y.get(r);
+if(!t)return null;
+var o;
+try{
+o=JSON.parse(t);
+}catch(u){}
+if(o){
+var a=+new Date,c=1*o.time;
+return a-c>S.lsTimeout||o.version!=n||!o.func?(i(e),null):o.func;
+}
+}
+function i(e){
+var n=f(e);
+y.remove(n);
+}
+function a(e,n,r){
+var t={
+version:n,
+func:r,
+time:+new Date
+},o=f(e);
+try{
+y.set(o,JSON.stringify(t));
+}catch(u){}
+}
+function c(e,n){
+return e=e||window,e[S.winCacheKey]&&e[S.winCacheKey][n]&&e[S.winCacheKey][n].state===!0?!0:!1;
+}
+function s(e){
+var n=d(e.url,e.version),r=e.win||window;
+r[S.winCacheKey]||(r[S.winCacheKey]={}),r[S.winCacheKey][n]||(r[S.winCacheKey][n]={}),
+r[S.winCacheKey][n].state=!0;
+}
+function l(e){
+var n=d(e.url,e.version),r=e.win||window;
+if(r[S.winCacheKey]&&r[S.winCacheKey][n])try{
+delete r[S.winCacheKey][n];
+}catch(t){}
+}
+function f(e){
+return encodeURIComponent(e);
+}
+function d(e,n){
+return encodeURIComponent(e)+"_"+n||"";
+}
+function v(e){
+l(e),i(e.url);
+}
+var w=e("biz_wap/utils/ajax.js"),y=e("biz_wap/utils/localstorage.js"),S={
+jsLoadState:{},
+winCacheKey:"__loadExternalJsStates__",
+lsTimeout:1728e5,
+customerParam:"wxv",
+callbackQueue:[]
+};
+return{
+ClearCache:v,
+Load:n
+};
+});define("new_video/plugin/util.js",["biz_wap/utils/storage.js"],function(e){
+"use strict";
+var t=e("biz_wap/utils/storage.js"),n=new t("player"),r=function(e){
+var t="VIDEO_NOTICE_"+e,r=n.get(t),i=void 0,o=(new Date).getHours();
+i=4>o?(new Date).setHours(0,0,0,0)+144e5:(new Date).setHours(0,0,0,0)+1008e5;
+var u=1;
+r&&r.noticeTime&&(u=r.noticeTime+1),n.set(t,{
+noticeTime:u
+},i);
+},i=function(e){
+var t=["2g","3g","4g","2g/3g"];
+return e?t.indexOf(e)>-1:!1;
+},o=function(e,t){
+var i="VIDEO_NOTICE_"+t,o=n.get(i);
+if(!o)return r(t),!0;
+if(o&&5===t){
+var u=o.noticeTime;
+if(1===u&&e>=200||2===u&&e>=300)return r(e,t),!0;
+}
+return!1;
+},u=function(e,t){
+var n=Object.getOwnPropertyNames(e),r=Object.getOwnPropertyNames(t);
+if(n.length!==r.length)return!1;
+for(var i=0;i<n.length;i++){
+var o=n[i],u=e[o],s=t[o];
+if(u!==s)return!1;
+}
+return!0;
+},s=function(e){
+return"no"===e||"none"===e;
+};
+return{
+storeNoticeInfo:r,
+isMobileNetwork:i,
+isVideoNeedFlowNotice:o,
+isObjectValueEqual:u,
+isNoneNetwork:s
+};
+});define("biz_common/base64.js",[],function(r,t,n){
+"use strict";
+var e,c="2.1.9";
+if("undefined"!=typeof n&&n.exports)try{}catch(o){}
+var u="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/",a=function(r){
+for(var t={},n=0,e=r.length;e>n;n++)t[r.charAt(n)]=n;
+return t;
+}(u),h=String.fromCharCode,i=function(r){
+if(r.length<2){
+var t=r.charCodeAt(0);
+return 128>t?r:2048>t?h(192|t>>>6)+h(128|63&t):h(224|t>>>12&15)+h(128|t>>>6&63)+h(128|63&t);
+}
+var t=65536+1024*(r.charCodeAt(0)-55296)+(r.charCodeAt(1)-56320);
+return h(240|t>>>18&7)+h(128|t>>>12&63)+h(128|t>>>6&63)+h(128|63&t);
+},f=/[\uD800-\uDBFF][\uDC00-\uDFFFF]|[^\x00-\x7F]/g,A=function(r){
+return r.replace(f,i);
+},d=function(r){
+var t=[0,2,1][r.length%3],n=r.charCodeAt(0)<<16|(r.length>1?r.charCodeAt(1):0)<<8|(r.length>2?r.charCodeAt(2):0),e=[u.charAt(n>>>18),u.charAt(n>>>12&63),t>=2?"=":u.charAt(n>>>6&63),t>=1?"=":u.charAt(63&n)];
+return e.join("");
+},g=function(r){
+return r.replace(/[\s\S]{1,3}/g,d);
+},s=e?function(r){
+return(r.constructor===e.constructor?r:new e(r)).toString("base64");
+}:function(r){
+return g(A(r));
+},C=function(r,t){
+return t?s(String(r)).replace(/[+\/]/g,function(r){
+return"+"==r?"-":"_";
+}).replace(/=/g,""):s(String(r));
+},l=function(r){
+return C(r,!0);
+},p=new RegExp(["[À-ß][-¿]","[à-ï][-¿]{2}","[ð-÷][-¿]{3}"].join("|"),"g"),S=function(r){
+switch(r.length){
+case 4:
+var t=(7&r.charCodeAt(0))<<18|(63&r.charCodeAt(1))<<12|(63&r.charCodeAt(2))<<6|63&r.charCodeAt(3),n=t-65536;
+return h((n>>>10)+55296)+h((1023&n)+56320);
+
+case 3:
+return h((15&r.charCodeAt(0))<<12|(63&r.charCodeAt(1))<<6|63&r.charCodeAt(2));
+
+default:
+return h((31&r.charCodeAt(0))<<6|63&r.charCodeAt(1));
+}
+},b=function(r){
+return r.replace(p,S);
+},v=function(r){
+var t=r.length,n=t%4,e=(t>0?a[r.charAt(0)]<<18:0)|(t>1?a[r.charAt(1)]<<12:0)|(t>2?a[r.charAt(2)]<<6:0)|(t>3?a[r.charAt(3)]:0),c=[h(e>>>16),h(e>>>8&255),h(255&e)];
+return c.length-=[0,0,2,1][n],c.join("");
+},F=function(r){
+return r.replace(/[\s\S]{1,4}/g,v);
+},j=e?function(r){
+return(r.constructor===e.constructor?r:new e(r,"base64")).toString();
+}:function(r){
+return b(F(r));
+},m=function(r){
+return j(String(r).replace(/[-_]/g,function(r){
+return"-"==r?"+":"/";
+}).replace(/[^A-Za-z0-9\+\/]/g,""));
+};
+return{
+VERSION:c,
+atob:F,
+btoa:g,
+fromBase64:m,
+toBase64:C,
+utob:A,
+encode:C,
+encodeURI:l,
+btou:b,
+decode:m
+};
+});define("new_video/player.html.js",[],function(){
+return'<!-- isTLpage 是由推荐理由落地页传入，用来控制一些展示形态 -->\n<div id="js_mpvedio_<#=id#>" class="js_mpvedio <#if(isTLpage) {#>TL-page<#}#>">\n    <!--\n        page_video_skin-vertical 落地页 竖屏 全屏\n        page_video_skin-horizontal 落地页 横屏 全屏\n    -->\n    <div class="js_page_video page_video ratio_primary <#if(ratio==(4/3)){#>video_skin_primary<#}#>" style="width:<#=width#>px;height:<#=height#>px;display:<#=display#>;">\n        <!--ps: @拉风\n            1.全屏body添加扩展类： full_screen_mv\n            2.全屏是竖屏播放的情况：需要给page_video这个div加一个margin-left,margin-top\n            这两个值是page_video设置的高度和宽度的一半的负数；\n            3.如果是横屏的话(横屏默认为全屏)，page_video上设置的宽度和高度去掉即可。\n        -->\n    \n        <!-- <div class="wrp_loading js_loading">\n            <div class="wrp_svg">\n                <svg  class="rotate_svg" width="64" height="64" xmlns="http://www.w3.org/2000/svg">\n                    <circle cx="50%" cy="50%" r="40%" stroke-width="4"/>\n                    <path fill="#fff" stroke="#f00" stroke-width="4" fill-opacity="0" d="M4.5 35\n                   A 26 26, 0,0,0, 27 56" transform="rotate(330.191 30 30)">\n                 <animateTransform attributeType="xml" attributeName="transform" type="rotate" from="0 30 30" to="360 30 30" dur="5s" repeatCount="indefinite"></animateTransform>\n    \n              </path>\n                </svg>\n                <svg class="loader_bg" xmlns="http://www.w3.org/2000/svg" width="64" height="64">\n                    <circle cx="50%" cy="50%" r="40%" style="fill:#a5a4a2;stroke:#a5a4a2;stroke-width:4;fill-opacity:0;"></circle>\n                </svg>\n            </div>\n        </div> -->\n        <!--全屏时播放结束，展示尾贴内容的时候，显示退出全屏按钮-->\n        <div class="js_video_fullscreen_end video_full-screen__head" style="display: none; z-index: 9999;">\n            <div class="video_full-screen__article-title">\n                <a href="javascript:;" class="js_video_fullscreen_end_exit video_full-screen__article-arrow exit"></a>\n            </div>\n        </div>\n        <!--全屏时顶部profile信息-->\n        <div class="js_video_fullscreen_profile video_full-screen__head" style="display: none;">\n            <div class="video_full-screen__head__inner">\n                <div class="video_full-screen__head__body">\n                    <div class="js_video_fullscreen_profile_exit video_full-screen__head__item">\n                        <div class="video_full-screen__article-title">\n                            <a href="javascript:;" class="video_full-screen__article-arrow"></a>\n                            <span class="js_video_fullscreen_title video_full-screen__article-title-text"></span>\n                        </div>\n                    </div><br/>\n                    <div class="js_video_fullscreen_go_profile video_full-screen__head__item">\n                        <div class="video_full-screen__account-info">\n                            <span class="js_video_fullscreen_head video_full-screen__account-avatar"></span>\n                            <span class="js_video_fullscreen_name video_full-screen__account-name"></span>\n                        </div>\n                    </div>\n                </div>\n                <!-- 更多菜单入口-->\n                <a class="video_menu_more js_video_fullscreen_menu_more" href="javascript:;" style="display: none;"></a>\n            </div>\n        </div>\n\n        <!-- 清晰度切换，顶部tips-->\n        <div class="change_tip_container js_auto_change_tip_mask" style="display: none;">\n            <!--\n                tips 出现动画加className video__top-tips__showIn\n                tips 隐藏动画加className video__top-tips__showOut\n            -->\n            <div class="video__top-tips__mask">\n                <div class="video__top-tips js_auto_change_tip" style="display: none;">视频卡顿，建议切换到自动 <a class="video__top-tips__link js_auto_change_link" href="javascript:;">立即切换</a></div>\n                <div class="video__top-tips js_auto_change_suc_tip" style="display: none;">已成功切换至自动模式</div>\n            </div>\n        </div>\n        \n        <!--下载腾讯视频-->\n        <div id="ing_download_<#=id#>" class="app_download_container" style="display:none;">\n            <# if (window.cgiData) { #>\n            <img class="app_thumb" src="<#=window.cgiData.appImg||""#>">\n            <# } else { #>\n            <img class="app_thumb" src="">\n            <# } #>\n            <span class="btn_app_download_wrp js_download_btn">\n                <span class="btn_app_download js_download_text">下载</span>\n            </span>\n            <span class="btn_app_download_wrp js_progress_main" style="display:none;">\n                <span class="btn_app_download progress_text js_progress_text"></span>\n                <span class="app_download_progress js_progress" style="width:0%;"></span>\n            </span>\n            <div class="app_download_info">\n                <strong class="app_download_title">提升3倍流畅度</strong>\n                <p class="app_download_desc"><span class="js_installStatus"></span>腾讯视频客户端</p>\n            </div>\n        </div>\n    \n        <!-- 视频加载失败 -->\n        <!--\n        <div class="wx_video_error_box">\n            <div class="wx_video_error_msg">\n                <p>视频加载失败，请刷新再试</p>\n                <a class="wx_video_error_msg_btn" href="javascript:;">刷新</a>\n            </div>\n            <img class="wx_video_error_loading" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADkAAAA5CAMAAAC7xnO3AAAAY1BMVEUAAAD///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////+aRQ2gAAAAIXRSTlMAOx20pMJbzBQNTDGTh2ohLCZmeUF2hEmXCFdxUquef4yHE17nAAACnklEQVRIx9WW2xqiIBSFRc1AUATJU1a+/1MOm0NYKvnNXM260ZLftRcbqCQinOLI0yiY/iXKuUZPjx5Fk+6RhF1yHiVF0wC6IZfr9fqIkpRqdNyQ9AoiUU8g+YZ8Xn96YmNKvkhkLMskKgEo/yJzaxkXeZsGsjeWKEIFU/FBZgA+D5yEwGtTgR0J18lYUvdcLZ1YkUjLf+a0saYYSG/J3Hury+WSkTCjCETtF6Mvd8QGJMZSWIfsAlKhWGRl5zQ1ZNBDgy/zzvvFavWUK7SyTRs+rsiUZS/4LHIHyo8VgBx7vDkKx2WhPS7dD1Q6cNlu2dTa0gMys4bz/vJR6ph8ADgcVcSVUkfnhzJTc6gRj8fbCOHk30UI2KC+V4gKjskJQqC5frFHli0kafogFIfFkAXVCSqdAFVR8pmtVCWiXCtaarbWpGtQAYx7sjf2GCbfjFRQpH7lTLucveSMBE7+Z6VqViT2/PVs0d7hPk9TUcTaUuVaT8k/f/v6SXOgyG7InZaSvM8vj/309LrbvpSAORDH2/kWGyHhm/u5AYUc8qdFBRRrsV749bRv6I5x1OY50GZUUxQz9aGplAXZcOQ1DL3vwsTyvHQ2YWgjZV2rDTmxYRjUuoBvcQDr7QRLBiiNzJ4BawG3FLtTmEMGBigTRyC2oIKht1vbwLWrKmXKBZal+yApDGhm4q5JCVdNdrZeQBe8B44WnE2NGmxrR1bCvMugHdkhSwMWI9wjIGeosnPlJmNrst6PQrpeFkBSyAmkdD016DYqAVC6HHcNtnCPgazcuytAd5IqB/qYtq4bkP7vnEaL3W4KH9/HhKBAKl8XFUlMIWYIek4hZgh6UtjHBLVA4pPkCKRf9jOQ5Kwp1UvPDyb3qkPJaRG8Ln7f8Q8Bki/Kj5IYnQAAAABJRU5ErkJggg==">\n        </div>\n        -->\n        <!--菊花-->\n        <div class="wrp_loading js_loading start_loading"  style="display:none; <#if(isTLpage) {#>transform: scale(0);<#}#>">\n            <div class="mid_opr">\n                <i class="wx_video_loading">\n                </i>\n                <!--\n                <div style="display:none" class="spinner" role="progressbar"\n                    style="position: absolute; width: 0px; z-index: 2000000000; left: 50%; top: 50%;backface-visibility:hidden; -webkit-backface-visibility:hidden;">\n                    <div style="position: absolute; top: -1px; opacity: 0.25; animation: opacity-60-25-0-12 1.25s linear infinite;-webkit-animation: opacity-60-25-0-12 1.25s linear infinite;">\n                        <div\n                            style="position: absolute; width: 9.68px; height: 3.08px; box-shadow: rgba(0, 0, 0, 0.0980392) 0px 0px 1px; transform-origin: left 50% 0px; transform: rotate(0deg) translate(9.24px, 0px);-webkit-transform-origin: left 50% 0px; -webkit-transform: rotate(0deg) translate(9.24px, 0px); border-radius: 1px; background: rgb(253, 253, 253);"></div>\n                    </div>\n                    <div style="position: absolute; top: -1px; opacity: 0.25; animation: opacity-60-25-1-12 1.25s linear infinite;-webkit-animation: opacity-60-25-1-12 1.25s linear infinite;">\n                        <div\n                            style="position: absolute; width: 9.68px; height: 3.08px; box-shadow: rgba(0, 0, 0, 0.0980392) 0px 0px 1px; transform-origin: left 50% 0px; transform: rotate(30deg) translate(9.24px, 0px);-webkit-transform-origin: left 50% 0px; -webkit-transform: rotate(30deg) translate(9.24px, 0px); border-radius: 1px; background: rgb(253, 253, 253);"></div>\n                    </div>\n                    <div style="position: absolute; top: -1px; opacity: 0.25; animation: opacity-60-25-2-12 1.25s linear infinite;-webkit-animation: opacity-60-25-2-12 1.25s linear infinite;">\n                        <div\n                            style="position: absolute; width: 9.68px; height: 3.08px; box-shadow: rgba(0, 0, 0, 0.0980392) 0px 0px 1px; transform-origin: left 50% 0px; transform: rotate(60deg) translate(9.24px, 0px);-webkit-transform-origin: left 50% 0px; -webkit-transform: rotate(60deg) translate(9.24px, 0px); border-radius: 1px; background: rgb(253, 253, 253);"></div>\n                    </div>\n                    <div style="position: absolute; top: -1px; opacity: 0.25; animation: opacity-60-25-3-12 1.25s linear infinite;-webkit-animation: opacity-60-25-3-12 1.25s linear infinite;">\n                        <div\n                            style="position: absolute; width: 9.68px; height: 3.08px; box-shadow: rgba(0, 0, 0, 0.0980392) 0px 0px 1px; transform-origin: left 50% 0px; transform: rotate(90deg) translate(9.24px, 0px);-webkit-transform-origin: left 50% 0px; -webkit-transform: rotate(90deg) translate(9.24px, 0px); border-radius: 1px; background: rgb(253, 253, 253);"></div>\n                    </div>\n                    <div style="position: absolute; top: -1px; opacity: 0.25; animation: opacity-60-25-4-12 1.25s linear infinite;-webkit-animation: opacity-60-25-4-12 1.25s linear infinite;">\n                        <div\n                            style="position: absolute; width: 9.68px; height: 3.08px; box-shadow: rgba(0, 0, 0, 0.0980392) 0px 0px 1px; transform-origin: left 50% 0px; transform: rotate(120deg) translate(9.24px, 0px);-webkit-transform-origin: left 50% 0px; -webkit-transform: rotate(120deg) translate(9.24px, 0px); border-radius: 1px; background: rgb(253, 253, 253);"></div>\n                    </div>\n                    <div style="position: absolute; top: -1px; opacity: 0.25; animation: opacity-60-25-5-12 1.25s linear infinite;-webkit-animation: opacity-60-25-5-12 1.25s linear infinite;">\n                        <div\n                            style="position: absolute; width: 9.68px; height: 3.08px; box-shadow: rgba(0, 0, 0, 0.0980392) 0px 0px 1px; transform-origin: left 50% 0px; transform: rotate(150deg) translate(9.24px, 0px);-webkit-transform-origin: left 50% 0px; -webkit-transform: rotate(150deg) translate(9.24px, 0px); border-radius: 1px; background: rgb(253, 253, 253);"></div>\n                    </div>\n                    <div style="position: absolute; top: -1px; opacity: 0.25; animation: opacity-60-25-6-12 1.25s linear infinite;-webkit-animation: opacity-60-25-6-12 1.25s linear infinite;">\n                        <div\n                            style="position: absolute; width: 9.68px; height: 3.08px; box-shadow: rgba(0, 0, 0, 0.0980392) 0px 0px 1px; transform-origin: left 50% 0px; transform: rotate(180deg) translate(9.24px, 0px);-webkit-transform-origin: left 50% 0px; -webkit-transform: rotate(180deg) translate(9.24px, 0px); border-radius: 1px; background: rgb(253, 253, 253);"></div>\n                    </div>\n                    <div style="position: absolute; top: -1px; opacity: 0.25; animation: opacity-60-25-7-12 1.25s linear infinite;-webkit-animation: opacity-60-25-7-12 1.25s linear infinite;">\n                        <div\n                            style="position: absolute; width: 9.68px; height: 3.08px; box-shadow: rgba(0, 0, 0, 0.0980392) 0px 0px 1px; transform-origin: left 50% 0px; transform: rotate(210deg) translate(9.24px, 0px);-webkit-transform-origin: left 50% 0px; -webkit-transform: rotate(210deg) translate(9.24px, 0px); border-radius: 1px; background: rgb(253, 253, 253);"></div>\n                    </div>\n                    <div style="position: absolute; top: -1px; opacity: 0.25; animation: opacity-60-25-8-12 1.25s linear infinite;-webkit-animation: opacity-60-25-8-12 1.25s linear infinite;">\n                        <div\n                            style="position: absolute; width: 9.68px; height: 3.08px; box-shadow: rgba(0, 0, 0, 0.0980392) 0px 0px 1px; transform-origin: left 50% 0px; transform: rotate(240deg) translate(9.24px, 0px);-webkit-transform-origin: left 50% 0px; -webkit-transform: rotate(240deg) translate(9.24px, 0px); border-radius: 1px; background: rgb(253, 253, 253);"></div>\n                    </div>\n                    <div style="position: absolute; top: -1px; opacity: 0.25; animation: opacity-60-25-9-12 1.25s linear infinite;-webkit-animation: opacity-60-25-9-12 1.25s linear infinite;">\n                        <div\n                            style="position: absolute; width: 9.68px; height: 3.08px; box-shadow: rgba(0, 0, 0, 0.0980392) 0px 0px 1px; transform-origin: left 50% 0px; transform: rotate(270deg) translate(9.24px, 0px);-webkit-transform-origin: left 50% 0px; -webkit-transform: rotate(270deg) translate(9.24px, 0px); border-radius: 1px; background: rgb(253, 253, 253);"></div>\n                    </div>\n                    <div style="position: absolute; top: -1px; opacity: 0.25; animation: opacity-60-25-10-12 1.25s linear infinite;-webkit-animation: opacity-60-25-10-12 1.25s linear infinite;">\n                        <div\n                            style="position: absolute; width: 9.68px; height: 3.08px; box-shadow: rgba(0, 0, 0, 0.0980392) 0px 0px 1px; transform-origin: left 50% 0px; transform: rotate(300deg) translate(9.24px, 0px);-webkit-transform-origin: left 50% 0px; -webkit-transform: rotate(300deg) translate(9.24px, 0px); border-radius: 1px; background: rgb(253, 253, 253);"></div>\n                    </div>\n                    <div style="position: absolute; top: -1px; opacity: 0.25; animation: opacity-60-25-11-12 1.25s linear infinite;-webkit-animation: opacity-60-25-11-12 1.25s linear infinite;">\n                        <div\n                            style="position: absolute; width: 9.68px; height: 3.08px; box-shadow: rgba(0, 0, 0, 0.0980392) 0px 0px 1px; transform-origin: left 50% 0px; transform: rotate(330deg) translate(9.24px, 0px);-webkit-transform-origin: left 50% 0px; -webkit-transform: rotate(330deg) translate(9.24px, 0px); border-radius: 1px; background: rgb(253, 253, 253);"></div>\n                    </div>\n                </div>\n                -->\n            </div>\n            <!--\n            <svg version="1.1" class="svg_loader" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"\n            width="60px" height="60px" viewBox="0 0 60 60" enable-background="new 0 0 60 60" xml:space="preserve">\n    \n            <circle cx="30" cy="30" r="26" style="fill:#a5a4a2;stroke:#a5a4a2;stroke-width:4;fill-opacity:0" />\n            <path  fill="#fff" stroke="#fff"  stroke-width="4"  fill-opacity="0" d="M4.5 35A 26 26, 0,0,0, 27 56" style="stroke-linecap:round;">\n            <animateTransform attributeType="xml"\n            attributeName="transform"\n            type="rotate"\n            from="0 30 30"\n            to="360 30 30"\n            dur="0.5s"\n            repeatCount="indefinite"/>\n            </path>\n            </svg>\n            -->\n        </div>\n    \n        <!-- 播放按钮 z-index:12 -->\n        <div class="video_pause_controll js_video_pause_controll" style="display: none; <#if(isTLpage) {#>transform: scale(0);<#}#>">\n            <a class="btn_pause js_btn_pause">\n                <i class="icon_pause"></i>\n            </a>\n        </div>\n    \n        <!-- 互选视频广告 静音btn 静音状态className:muting -->\n        <# if(ad_muted_btn){ #>\n        <span class="js_muted_btn video_muted_btn muting">静音</span>\n        <# } #>\n    \n        <!-- 视频广告 z-index:13 -->\n        <div class="video_ad js_ad_controll" style="display:none;">\n            <span class="button_left_time video_ad_time_meta mpad_more_innervideo_container js_ad_opt_list_btn">广告                <!--投诉入口 begin-->\n                <div href="javascript:;" class="mpad_more js_ad_opt_list_btn" style="<# if(!parseInt(parent.window.can_see_complaint)){ #>display: none<# } #>">\n                    <ul class="mpad_more_list js_ad_opt_list" style="display:none;">\n                        <li class="mpad_more_list_ele">\n                            <a class="mpad_more_list_ele_container js_complain_btn" href="javascript:;">投诉</a>\n                        </li>\n                    </ul>\n                </div>\n                <!--投诉入口 end-->\n                <span class="button_left_time_num js_play_time"></span></span>\n            <a href="javascript:;" class="btn_close js_btn_can_close_ad video_ad_time_meta" style="display:none;">可在<span class="js_can_close_time">(5s)</span>后关闭</a>\n            <a href="javascript:;" class="btn_close js_btn_close_ad video_ad_time_meta" style="display:none;">关闭<i></i></a>\n    \n        </div>\n        <!-- 视频广告详情入口 -->\n        <div class="video_ad_detail js_ad_detail" style="display:none;">\n            <!--带小程序logo时，className 去掉with_arrow，加className with_weapp-->\n            <a href="javascript:;" class="btn btn_ad_detail with_arrow js_btn_ad_detail">\n                <!-- 小程序图标 -->\n                <span class="icon26_weapp_white js_video_post_weapp_icon" style="display:none;"></span>了解详情            </a>\n        </div>\n        <!--带小程序icon-->\n        <!-- <div class="video_ad_detail js_ad_detail" style="display:none;">\n            <a href="javascript:;" class="btn btn_ad_detail with_weapp js_btn_ad_detail">\n                <span class="icon26_weapp_white js_video_post_weapp_icon"></span>\n                了解详情\n            </a>\n        </div> -->\n    \n        <div class="video_ad_detail js_ad_app" style="display:none;">\n            <a href="javascript:;" class="btn btn_ad_detail with_arrow js_btn_ad_app">下载应用</a>\n        </div>\n    \n         <!--最后的视频推荐 z-index:11-->\n        <div class="js_end_dom continue_play none">\n            <!--\n            <div class="continue_inner">\n                <div class="hd_opr"><a href="#" class="btn_replay"><i class="icon_replay"></i>重新播放</a></div>\n                <div class="tit_desc">以下视频将跳到腾讯视频播放</div>\n                <ul class="video_list">\n                   <li class="video_item">\n                       <a href="#" class="inner_item">\n                           <img  class="cover" src="<%@GetResFullName($images_path$pages/default_avator.png)%>"/>\n                           <div class="desc">\n                            这里是video的标题啊标题京东覅是\n                           </div>\n                       </a>\n                   </li>\n                </ul>\n            </div>\n            -->\n        </div>\n        \n        <!-- 无障碍按钮 不需要了 -->\n        <em data-status="0" style="display:none" class="js_btn_play_aria btn_pause_accessibility"></em> \n        \n\n        <!--封面-->\n        <!-- 跟播放器相同比例是style加上：\n            -webkit-background-size:cover;background-size:cover;  -->\n        <#if(cover){#>\n        <div class="js_poster_cover poster_cover" style="background-image:url(<#=cover#>);-webkit-background-size:<#if(useWcSlPlayer){#>contain<#}else{#>cover<#}#>;background-size:<#if(useWcSlPlayer){#>contain<#}else{#>cover<#}#>;">\n            <!-- <img aria-labelledby="封面" alt="封面" src="<#=cover#>">\n            <div class="poster_cover_mask"></div> -->\n        </div>\n        <#}#>\n\n        <!-- 推荐页才有的时间结构 -->\n        <div class="video_time-wrp">\n            <div class="video_time-loading_icon js_tlpage_loading" style="display: none;"></div>\n            <div class="video_time-play_icon js_tlpage_play"></div>\n            <div class="video_time js_remain_time"><#=formatDuration#></div>\n        </div>\n\n        <!--大播放-->\n        <div style="display:none; <#if(isTLpage) {#>transform: scale(0);<#}#>" class="full_screen_opr js_video_play_controll">\n            <div class="mid_play_box js_btn_play">\n                <!-- 旧播放icon -->\n                <i role="button" aria-label="播放视频" class="icon_mid_play"></i>\n                <!-- 新播放icon -->\n                <i role="button" aria-label="播放视频" class="icon_mid_new_play"></i> \n                <div role="option">\n                  <span class="aria_hidden_abs">时长</span>\n                  <p class="js_video_length video_length" style="display:none;"></p>\n                </div>\n            </div>\n        </div>\n\n        <!-- 视频分享 -->\n        <#if(canShareVideo){#>\n        <div class="js_share_btn_contain top_screen_opr" style="display: none;">\n            <div class="wx_video_share_area">\n            <button type="button" class="js_share_btn wx_video_share_btn">分享视频</button>\n            </div>\n        </div>\n        <#}#>\n    \n        <!--流量提示-->\n        <div class="top_screen_opr flex_screen_hide js_video_flow" style="display: none">\n            <div class="wx_video_flow">\n                <p class="wx_video_flow_tips js_flow_notice_1" style="display: none">\n                    当前为非Wi-Fi环境，请注意流量消耗                </p>\n                <p class="wx_video_flow_tips js_flow_notice_2" style="display: none">\n                    正在使用流量播放，该视频预计消耗                    <span class="js_video_flow_num"></span>\n                </p>\n            </div>\n        </div>\n    \n        <!--mask,暂停状态下，提醒状态等的半透明蒙层-->\n        <div class="video_mask none"></div>\n    \n        <!--快进。后退 操作 快进：next,快退，pre-->\n        <!--亮度，音量调节也复用一波-->\n        <div  class="mid_opr fast_pre_next none js_forward">\n            <p class="video_length">\n                <span class="played_time js_forward_play_time">03:30</span>\n                <span class="js_forward_seperator">/</span>\n                <span class="total_time js_forward_total_time">03:30</span>\n            </p>\n            <div class="video_processor_bar">\n                <div class="processor_bar_inner js_forward_bar" style="width:30%;"></div>\n            </div>\n        </div>\n\n        <!--控制栏-->\n        <!--消失opr_fade_out  出现opr_fade_in-->\n        <!--消失opr_fade_out  出现opr_fade_in-->\n        <div class="js_controll video_opr" style="display:none; <#if(isTLpage) {#>transform: scale(0);<#}#>">\n             <div class="opr_inner">\n                <div class="opr_inner_fl">\n                    <div role="button" class="js_switch switch switch_on"><!--switch_off 关闭，switch on开启-->\n                        <span href="javascript:;" class="js_btn_opr btn_opr"></span>\n                    </div>\n                    <div class="played_time js_now_play_time">00:00</div>/<div class="total_time js_total_time">00:00</div>\n                </div>\n                <!-- <div class="wrp_pop_play"><a href="#" class="pop_play">小窗</a></div> -->\n                \n\n                <div class="opr_inner_fr">\n                    <#if(_initUseWcSlPlayer){#>\n                        <!--倍速播放-->\n                        <#if(playbackRateInfo && playbackRateInfo.length){#>\n                        <div class="play_setting_mode play_setting_mode__rate js_playback_mode_change">\n                            <a href="javascript:;" id="play_setting_mode__rate" class="play_setting">倍速</a>\n                        </div>\n                        <#}#>\n                        <!--清晰度切换-->\n                        <#if(resolutionInfo && resolutionInfo.length){#>\n                        <div class="play_setting_mode js_play_mode_change" style="display: none;">\n                            <a href="javascript:;" class="play_setting"><#=initResolutionName#></a>\n                        </div>\n                        <#}#>\n                    <#}#>\n                    <#if(!_mustHideFullScreen){#>\n                    <div role="button" class="js_full_screen_control screenSize_control full"><i class="icon_control">全屏</i></div>  <!--全屏className：full,小窗className：small-->\n                    <#}#>\n                </div>\n             </div>\n        </div>\n\n        <#if(_initUseWcSlPlayer){#>\n        <div class="js_sub_setting video_full-screen__footer video_full-screen__footer__sub-setting">\n            <#if(playbackRateInfo && playbackRateInfo.length){#>\n            <div class="video_full-screen__sub-setting video_full-screen__sub-setting__speed js_playback_mode_select" style="display: none;">\n                <#playbackRateInfo.forEach(function(_info, idx){#>\n                <a href="javascript:;" class="video_full-screen__sub-setting__item <#if(_info.initCurrent){#>current<#}#> js_playback_<#=idx#>"><#=_info.name#></a>\n                <#});#>\n            </div>\n            <#}#>\n            <#if(resolutionInfo && resolutionInfo.length){#>\n            <div class="video_full-screen__sub-setting video_full-screen__sub-setting__ratio js_play_mode_select" style="display: none;">\n                <#resolutionInfo.forEach(function(_info, idx){#>\n                <a href="javascript:;" class="video_full-screen__sub-setting__item <#if(_info.initCurrent){#>current<#}#> js_resolution_<#=idx#>"><#=_info.name#></a>\n                <#});#>\n            </div>\n            <#}#>\n        </div>\n        <#}#>\n        <!--进度条-->\n        <!--收起滑块wrp_play_bar_hide_speed-dot-->\n        <div class="js_play_bar_wrapper wrp_play_bar wrp_play_bar_hide_speed-dot" <#if(isTLpage) {#>style="transform: scale(0);"<#}#>>\n            <!--\n                拖动进度条\n                加className wrp_progress__draging\n            -->\n            <div class="js_progress_bar wrp_progress" style="display:none;">\n                <div class="progress_bar">\n                    <div class="background_bar"></div><!--背景条-->\n                    <div class="js_played_bar played_bar" style="width:0%"></div><!--进度条-->\n                    <div class="js_buffer_bar buffer_bar" style="width:0%"></div><!--缓冲条-->\n                    <div class="js_played_speed_cnt wrp_speed_dot"><i class="speed_dot" style="left:0%; max-width: none !important;"></i></div>\n                </div>\n            </div>\n        </div>\n        <!--视频-->\n        <div class="js_inner inner not_fullscreen">\n            <div class="js_video_poster video_poster" <#if(!_initUseWcSlPlayer){#>style="display:none;"<#}#>>\n                <div class="video_mask js_video_mask"></div>\n                \n               \n                \n                <#if(_initUseWcSlPlayer){#>\n                <wx-open-video src="<#=src#>" width="<#=width#>" height="<#=height#>" style="display:block;"\n                    fullscreen-after-orientation-change hide-ios-exit-btn-when-fullscreen\n                    <#if(typeof initialTime===\'number\' && autoplay){#>initial-time="<#=initialTime#>" autoplay<#}#>\n                >\n                </wx-open-video>\n                <#}else{#>\n                <video class="<#if(videoFit){#>video_fill<#}#>" webkit-playsinline playsinline <#if(videoCrossOrigin){#>crossorigin="anonymous"<#}#>>\n                    您的浏览器不支持 video 标签                </video>\n                <#}#>\n            </div>\n        </div>\n    \n    </div>\n    \n        <!--全屏遮罩-->\n    <div class="js_full_mask full_mask" style=""></div>\n    <!--\n    11 菊花\n    10 最后的视频推荐\n    9封面上边的控制按钮\n    8  以后的广告浮层\n    7 封面\n    6 视频+控制条 （在里边控制条z-index>视频） -->\n</div>\n    \n';
+});function _typeof2(t){
+return t&&"undefined"!=typeof Symbol&&t.constructor===Symbol?"symbol":typeof t;
+}
+var _extends=Object.assign||function(t){
+for(var e=1;e<arguments.length;e++){
+var i=arguments[e];
+for(var n in i)Object.prototype.hasOwnProperty.call(i,n)&&(t[n]=i[n]);
+}
+return t;
+};
+define("new_video/plugin/danmu_util.js",[],function(){
+"use strict";
+function t(e){
+return(t="function"==typeof Symbol&&"symbol"===_typeof2(Symbol.iterator)?function(t){
+return"undefined"==typeof t?"undefined":_typeof2(t);
+}:function(t){
+return t&&"function"==typeof Symbol&&t.constructor===Symbol&&t!==Symbol.prototype?"symbol":"undefined"==typeof t?"undefined":_typeof2(t);
+})(e);
+}
+function e(t,e){
+if(!(t instanceof e))throw new TypeError("Cannot call a class as a function");
+}
+function i(t,e){
+for(var i=0;i<e.length;i++){
+var n=e[i];
+n.enumerable=n.enumerable||!1,n.configurable=!0,"value"in n&&(n.writable=!0),Object.defineProperty(t,n.key,n);
+}
+}
+function n(t,e,n){
+return e&&i(t.prototype,e),n&&i(t,n),t;
+}
+function a(t,e){
+if("function"!=typeof e&&null!==e)throw new TypeError("Super expression must either be null or a function");
+t.prototype=Object.create(e&&e.prototype,{
+constructor:{
+value:t,
+writable:!0,
+configurable:!0
+}
+}),e&&o(t,e);
+}
+function s(t){
+return(s=Object.setPrototypeOf?Object.getPrototypeOf:function(t){
+return t.__proto__||Object.getPrototypeOf(t);
+})(t);
+}
+function o(t,e){
+return(o=Object.setPrototypeOf||function(t,e){
+return t.__proto__=e,t;
+})(t,e);
+}
+function r(t){
+if(void 0===t)throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+return t;
+}
+function l(t,e){
+return!e||"object"!==("undefined"==typeof e?"undefined":_typeof2(e))&&"function"!=typeof e?r(t):e;
+}
+function h(t,e){
+return c(t)||u(t,e)||f();
+}
+function c(t){
+return Array.isArray(t)?t:void 0;
+}
+function u(t,e){
+var i=[],n=!0,a=!1,s=void 0;
+try{
+for(var o,r=t[Symbol.iterator]();!(n=(o=r.next()).done)&&(i.push(o.value),!e||i.length!==e);n=!0);
+}catch(l){
+a=!0,s=l;
+}finally{
+try{
+n||null==r["return"]||r["return"]();
+}finally{
+if(a)throw s;
+}
+}
+return i;
+}
+function f(){
+throw new TypeError("Invalid attempt to destructure non-iterable instance");
+}
+function d(t,e){
+return e={
+exports:{}
+},t(e,e.exports),e.exports;
+}
+function p(t,e,i){
+this.now=0,this.afternow=0,this.delta=0,this.fps=t||10,this.interval=parseInt(1e3/t,10),
+this.callback=e||"",this.timecount=0,this.running=!1,this.timemode=i||"auto",this.index=Date.now(),
+"timeout"!==this.timemode&&(this.timemode="auto"),window.requestAnimationFrame=window.requestAnimationFrame||window.mozRequestAnimationFrame||window.webkitRequestAnimationFrame||window.msRequestAnimationFrame;
+}
+function m(t,e,i){
+return new p(t,e,i);
+}
+function g(t){
+var e=[],i=0,n=200,a=[],s={
+get:function(){
+if(e.length)return e.shift();
+if(n>i){
+i+=1;
+var a=new t;
+return a;
+}
+return null;
+},
+save:function(t){
+t&&e.push(t);
+},
+getLength:function(){
+return e.length;
+},
+getAll:function(){
+return a;
+}
+};
+return s;
+}
+function _(t,i,o,r){
+var c=i||null,u=o||null,f=!!r,d=function(){
+function t(){
+e(this,t),this._left=0,this._top=0,this._bottom=0,this._dom=null,this._animate=null,
+this._trail=-1,this._width=0,this.el=null,this.elText=null,this.fontSize=0,this.height=0,
+this.enableColor=!0,this.currentColor="",this.id=null,this.originContent="",this.isSys=!1,
+this.count=0,this.isStar=!1;
+}
+return n(t,[{
+key:"render",
+value:function(t,e,i){
+this.el||(this.write(),this.addClickEvent());
+var n;
+t.html?(this.el.innerHTML=t.html,n=t.html.length||0):(this.el.innerText=t.content,
+n=t.content.length||0),t.contentLength||(t.contentLength=n),this._width=t.width?t.width:e?t.contentLength*e:t.contentLength*i/1.5,
+this.font(e,i),t.gradienColor?this.gradienColor(t.gradienColor):this.color(t.color||"#ffffff"),
+this.id=t.id?t.id:null,this.originContent=t.originContent?t.originContent:"",this.isSys=!!t.isSys,
+this.isStar=!!t.isStar,this.count=0,this.isStar?he.addClass(this.el,"txp_barrage_item_speaker"):he.removeClass(this.el,"txp_barrage_item_speaker"),
+t.isself?he.addClass(this.el,"txp_barrage_item_self"):he.removeClass(this.el,"txp_barrage_item_self");
+}
+},{
+key:"font",
+value:function(t,e){
+t?this.fontSize!==+t&&(this.fontSize=t,this.height=Math.ceil(1.5*t),this.el.style.fontSize="".concat(t,"px"),
+this.el.style.lineHeight="".concat(this.height-6,"px"),this.el.style.height="".concat(this.height,"px")):e&&this.height!==+e&&(this.height=e,
+this.el.style.height="".concat(this.height,"px"),this.el.style.lineHeight="".concat(this.height,"px"),
+this.el.style.padding=0);
+}
+},{
+key:"color",
+value:function(t){
+t&&(this.disableColor(),he.css(this.el,"color",t));
+}
+},{
+key:"gradienColor",
+value:function(t){
+t?t[1]!==t[0]?(he.css(this.el,"color",t[1]),he.css(this.el,"background-image","linear-gradient(to right,".concat(t[0]," 0,").concat(t[1]," 100%)")),
+he.css(this.el,"-webkit-text-fill-color","transparent"),he.css(this.el,"background-repeat","repeat"),
+he.css(this.el,"-webkit-background-clip","text"),he.css(this.el,"text-shadow","none")):this.color(t[1]):this.disableColor();
+}
+},{
+key:"disableColor",
+value:function(){
+he.css(this.el,"background-image",""),he.css(this.el,"-webkit-text-fill-color",""),
+he.css(this.el,"background-repeat",""),he.css(this.el,"-webkit-background-clip",""),
+he.css(this.el,"text-shadow","");
+}
+},{
+key:"addClickEvent",
+value:function(){
+var t=this;
+c&&this.el.addEventListener("click",function(){
+c(t);
+}),u&&this.el.addEventListener("contextmenu",function(e){
+t.isSys||(e.stopPropagation(),e.preventDefault(),u({
+danmuItem:t,
+x:e.clientX,
+y:e.clientY
+}));
+});
+}
+},{
+key:"left",
+get:function(){
+return this._left;
+}
+},{
+key:"trail",
+get:function(){
+return this._trail;
+},
+set:function(t){
+this._trail=t>0?t:-1;
+}
+},{
+key:"width",
+get:function(){
+return this._width;
+}
+}]),t;
+}(),p=function(i){
+function o(){
+var t;
+return e(this,o),t=l(this,s(o).call(this)),t.isHove=!1,t;
+}
+return a(o,i),n(o,[{
+key:"write",
+value:function(){
+var e=this,i=document.createElement("div");
+i.innerHTML=oe,this.el=i.firstChild,t.appendChild(this.el);
+var n=this.el.getElementsByClassName("txp_text"),a=h(n,1),s=a[0];
+this.elText=s,f&&(this.el.addEventListener("mouseenter",function(){
+e.isSys||e.isStar||(he.addClass(e.el,"txp_barrage_item_hover"),e.isHove=!0);
+}),this.el.addEventListener("mouseleave",function(){
+e.isSys||e.isStar||(he.removeClass(e.el,"txp_barrage_item_hover"),e.isHove=!1);
+}));
+}
+},{
+key:"move",
+value:function(t,e){
+return this.isStar&&3>t&&t>-10&&this.count<120?void(this.count+=1):(this._left=t,
+e>=0&&e!==this._top&&(this._top=e),this.el.style.transform="translate3D(".concat(this._left,"px, ").concat(this._top,"px, 1px)"),
+void("number"!=typeof window.top.__fontScaleBackForAndroid__||1===window.top.__fontScaleBackForAndroid__||this.el.getAttribute("mp-original-font-size")||(this.el.style.transform+=" scale3d(".concat(window.top.__fontScaleBackForAndroid__,", ").concat(window.top.__fontScaleBackForAndroid__,", 1)"))));
+}
+}]),o;
+}(d),m=function(t){
+function i(){
+var t;
+return e(this,i),t=l(this,s(i).call(this)),t["class"]="txp_animate",t.hide="txp_none",
+t.available=!0,t.isHover=!1,t.paused=!1,t;
+}
+return a(i,t),n(i,[{
+key:"pauseAnimate",
+value:function(t){
+t&&(this.paused=!0),he.css(this.el,"opacity",1),he.css(this.el,"animation-play-state","paused"),
+he.css(this.el,"-webkit-animation-play-state","paused");
+}
+},{
+key:"resumeAnimate",
+value:function(t){
+t&&(this.paused=!1),he.css(this.el,"opacity",""),he.css(this.el,"animation-play-state","running"),
+he.css(this.el,"-webkit-animation-play-state","running");
+}
+},{
+key:"removeAnimate",
+value:function(){
+var t=this;
+this.el&&(he.removeClass(this.el,this["class"]),he.addClass(this.el,this.hide)),
+setTimeout(function(){
+t.available=!0;
+},100);
+}
+},{
+key:"startAnimate",
+value:function(){
+this.available=!1,he.addClass(this.el,this["class"]),he.removeClass(this.el,this.hide);
+}
+},{
+key:"setBottom",
+value:function(t){
+t>=0&&t!==this._bottom&&(this._bottom=t),this.el.style.bottom="".concat(this._bottom,"px"),
+this.startAnimate();
+}
+},{
+key:"setTop",
+value:function(t){
+t>=0&&t!==this._top&&(this._top=t),this.el.style.top="".concat(this._top,"px"),this.startAnimate();
+}
+},{
+key:"addEvent",
+value:function(){
+var t=this;
+this.el.addEventListener("animationend",function(){
+t.removeAnimate();
+}),this.el.addEventListener("mouseenter",function(){
+he.addClass(t.el,"txp_barrage_item_hover"),t.pauseAnimate(),t.isHover=!0;
+}),this.el.addEventListener("mouseleave",function(){
+he.removeClass(t.el,"txp_barrage_item_hover"),t.paused||t.resumeAnimate(),t.isHover=!1;
+});
+}
+}]),i;
+}(d),g=function(i){
+function o(){
+return e(this,o),l(this,s(o).apply(this,arguments));
+}
+return a(o,i),n(o,[{
+key:"write",
+value:function(){
+var e=document.createElement("div");
+e.innerHTML=re,this.el=e.firstChild,t.appendChild(this.el);
+var i=this.el.getElementsByClassName("txp_text"),n=h(i,1),a=n[0];
+this.elText=a,this.addEvent();
+}
+}]),o;
+}(m),_=function(i){
+function o(){
+return e(this,o),l(this,s(o).apply(this,arguments));
+}
+return a(o,i),n(o,[{
+key:"write",
+value:function(){
+var e=document.createElement("div");
+e.innerHTML=le,this.el=e.firstChild,t.appendChild(this.el);
+var i=this.el.getElementsByClassName("txp_text"),n=h(i,1),a=n[0];
+this.elText=a,this.addEvent();
+}
+}]),o;
+}(m);
+return{
+baseBarrage:d,
+scrollBarrage:p,
+TopBarrage:g,
+BottomBarrage:_
+};
+}
+function b(t){
+return"string"!=typeof t?t:t.replace(/\?.+/g,"");
+}
+function y(){}
+function v(t){
+return"function"==typeof Array.isArray?Array.isArray(t):"[object Array]"===Object.prototype.toString.call(t);
+}
+function x(t,e){
+var i,n={
+xs:{
+xxs:12,
+xs:14,
+s:16,
+m:18,
+l:20,
+xl:22,
+xxl:26
+},
+s:{
+xxs:13,
+xs:17,
+s:19,
+m:21,
+l:23,
+xl:25,
+xxl:29
+},
+m:{
+xxs:15,
+xs:19,
+s:21,
+m:23,
+l:25,
+xl:27,
+xxl:31
+},
+l:{
+xxs:17,
+xs:21,
+s:23,
+m:25,
+l:27,
+xl:29,
+xxl:33
+},
+xl:{
+xxs:25,
+xs:29,
+s:31,
+m:33,
+l:35,
+xl:37,
+xxl:41
+}
+};
+return i=1024>=t?n.xs:t>1024&&1240>=t?n.s:t>1240&&1600>=t?n.m:t>1600&&1920>=t?n.l:t>1920?n.xl:n.m,
+i[e];
+}
+function w(t){
+t.prototype.start=function(t){
+this.dataset.state=1,this._start(t);
+},t.prototype.pause=function(){
+this.dataset.state=2,this._pause();
+},t.prototype.setFont=function(t){
+var e=["xxs","xs","s","m","l","xl","xxl"];
+e.indexOf(t)>-1&&(this.dataset.fontSetting=t),this.updateFont(),this.updateLineNum();
+},t.prototype.setRate=function(t){
+this.dataset.rate!==t&&(this.dataset.rate=t,this.dataset.realSpeed={
+0:this.dataset.speed*this.dataset.rate*1.2,
+1:this.dataset.speed*this.dataset.rate
+});
+},t.prototype.setOpacity=function(t){
+this._setOpacity(t);
+},t.prototype.setLine=function(t){
+this.dataset.userNum=t,this.updateLineNum();
+},t.prototype.enableColor=function(){
+this._toggleColor(!0);
+},t.prototype.disableColor=function(){
+this._toggleColor(!1);
+},t.prototype.hideScroll=function(){
+this._clearScroll(),this.dataset.enableScroll=!1;
+},t.prototype.showScroll=function(){
+this.dataset.enableScroll=!0;
+},t.prototype.hideTop=function(){
+this._handlePosition("top","clear"),this.dataset.enableTop=!1;
+},t.prototype.showTop=function(){
+this.dataset.enableTop=!0;
+},t.prototype.hideBottom=function(){
+this._handlePosition("bottom","clear"),this.dataset.enableBottom=!1;
+},t.prototype.showBottom=function(){
+this.dataset.enableBotton=!0;
+},t.prototype.switchOn=function(){
+this.start();
+},t.prototype.play=t.prototype.switchOn,t.prototype.switchOff=function(){
+this.pause(),this._clear();
+},t.prototype.end=t.prototype.switchOff,t.prototype.updateTime=function(t){
+this.index=t;
+},t.prototype.add=function(t){
+t&&this._addDanmu(JSON.parse(JSON.stringify(t)));
+};
+}
+function k(t){
+t.prototype._createTopDanmu=function(){
+var t=5;
+this.dataset.topList||(this.dataset.topList=[]);
+var e,i,n=this.dataset.topList;
+if(n.length<t)e=new this.Factory.TopBarrage,n.push(e),i=n.length;else for(var a=0,s=n.length;s>a;a+=1)if(n[a].available){
+e=n[a],i=a;
+break;
+}
+if(e){
+var o=this.list.get(this.dataset.index,5);
+o&&(this.dataset.enableColor||(o.color="#ffffff",o.gradienColor=[],o.gradienColor.push("#ffffff"),
+o.gradienColor.push("#ffffff")),this.emit("showDanmu",o),e.render(o,this.dataset.fontSize,this.dataset.lineHeight),
+e.setTop(i*this.dataset.lineHeight));
+}
+},t.prototype._createBottomDanmu=function(){
+var t=5;
+this.dataset.bottomList||(this.dataset.bottomList=[]);
+var e,i,n=this.dataset.bottomList;
+if(n.length<t)e=new this.Factory.BottomBarrage,n.push(e),i=n.length;else for(var a=0,s=n.length;s>a;a+=1)if(n[a].available){
+e=n[a],i=a;
+break;
+}
+if(e){
+var o=this.list.get(this.dataset.index,6);
+o&&(this.emit("showDanmu",o),this.dataset.enableColor||(o.color="#ffffff",o.gradienColor=[],
+o.gradienColor.push("#ffffff"),o.gradienColor.push("#ffffff")),e.render(o,this.dataset.fontSize,this.dataset.lineHeight),
+e.setBottom(i*this.dataset.lineHeight+this.dataset.marginBottom));
+}
+},t.prototype._handlePosition=function(t,e){
+var i,n={
+clear:"removeAnimate",
+pause:"pauseAnimate",
+resume:"resumeAnimate"
+},a=n[e]||"";
+switch(t){
+case"top":
+i=this.dataset.topList;
+break;
+
+case"bottom":
+i=this.dataset.bottomList;
+}
+if(i&&a)for(var s=0,o=i.length;o>s;s+=1)i[s][a]&&i[s][a](!0);
+},t.prototype._createTop=function(){
+this.dataset.enableTop&&this._createTopDanmu();
+},t.prototype._createBottom=function(){
+this.dataset.enableBottom&&this._createBottomDanmu();
+},t.prototype._createPositionDanmu=function(){
+this._createScroll(),this._createTop(),this._createBottom();
+};
+}
+"function"!=typeof Object.assign&&Object.defineProperty(Object,"assign",{
+value:function(t){
+if(null==t)throw new TypeError("Cannot convert undefined or null to object");
+for(var e=Object(t),i=1;i<arguments.length;i+=1){
+var n=arguments[i];
+if(null!=n)for(var a in n)Object.prototype.hasOwnProperty.call(n,a)&&(e[a]=n[a]);
+}
+return e;
+},
+writable:!0,
+configurable:!0
+});
+{
+var S=void 0,C=function(t){
+return t!==S&&null!==t;
+},O={
+object:!0,
+"function":!0,
+undefined:!0
+},B=function(t){
+return C(t)?hasOwnProperty.call(O,"undefined"==typeof t?"undefined":_typeof2(t)):!1;
+},A=function(t){
+if(!B(t))return!1;
+try{
+return t.constructor?t.constructor.prototype===t:!1;
+}catch(e){
+return!1;
+}
+},j=function(t){
+if("function"!=typeof t)return!1;
+if(!hasOwnProperty.call(t,"length"))return!1;
+try{
+if("number"!=typeof t.length)return!1;
+if("function"!=typeof t.call)return!1;
+if("function"!=typeof t.apply)return!1;
+}catch(e){
+return!1;
+}
+return!A(t);
+},T=/^\s*class[\s{\/}]/,E=Function.prototype.toString,P=function(t){
+return j(t)?T.test(E.call(t))?!1:!0:!1;
+},L=function(){
+var t,e=Object.assign;
+return"function"!=typeof e?!1:(t={
+foo:"raz"
+},e(t,{
+bar:"dwa"
+},{
+trzy:"trzy"
+}),t.foo+t.bar+t.trzy==="razdwatrzy");
+},N=function(){
+try{
+return Object.keys("primitive"),!0;
+}catch(t){
+return!1;
+}
+},z=function(){},H=z(),F=function(t){
+return t!==H&&null!==t;
+},D=Object.keys,M=function(t){
+return D(F(t)?Object(t):t);
+},q=N()?Object.keys:M,$=function(t){
+if(!F(t))throw new TypeError("Cannot use null or undefined");
+return t;
+},R=Math.max,I=function(t,e){
+var i,n,a,s=R(arguments.length,2);
+for(t=Object($(t)),a=function(n){
+try{
+t[n]=e[n];
+}catch(a){
+i||(i=a);
+}
+},n=1;s>n;++n)e=arguments[n],q(e).forEach(a);
+if(void 0!==i)throw i;
+return t;
+},U=L()?Object.assign:I,J=Array.prototype.forEach,W=Object.create,X=function(t,e){
+var i;
+for(i in t)e[i]=t[i];
+},Y=function(){
+var t=W(null);
+return J.call(arguments,function(e){
+F(e)&&X(Object(e),t);
+}),t;
+},G="razdwatrzy",K=function(){
+return"function"!=typeof G.contains?!1:G.contains("dwa")===!0&&G.contains("foo")===!1;
+},Q=String.prototype.indexOf,V=function(t){
+return Q.call(this,t,arguments[1])>-1;
+},Z=K()?String.prototype.contains:V,te=d(function(t){
+var e=t.exports=function(t,e){
+var i,n,a,s,o;
+return arguments.length<2||"string"!=typeof t?(s=e,e=t,t=null):s=arguments[2],C(t)?(i=Z.call(t,"c"),
+n=Z.call(t,"e"),a=Z.call(t,"w")):(i=a=!0,n=!1),o={
+value:e,
+configurable:i,
+enumerable:n,
+writable:a
+},s?U(Y(s),o):o;
+};
+e.gs=function(t,e,i){
+var n,a,s,o;
+return"string"!=typeof t?(s=i,i=e,e=t,t=null):s=arguments[3],C(e)?P(e)?C(i)?P(i)||(s=i,
+i=void 0):i=void 0:(s=e,e=i=void 0):e=void 0,C(t)?(n=Z.call(t,"c"),a=Z.call(t,"e")):(n=!0,
+a=!1),o={
+get:e,
+set:i,
+configurable:n,
+enumerable:a
+},s?U(Y(s),o):o;
+};
+}),ee=function(t){
+if("function"!=typeof t)throw new TypeError(t+" is not a function");
+return t;
+},ie=d(function(t,e){
+var i,n,a,s,o,r,l,h=Function.prototype.apply,c=Function.prototype.call,u=Object.create,f=Object.defineProperty,d=Object.defineProperties,p=Object.prototype.hasOwnProperty,m={
+configurable:!0,
+enumerable:!1,
+writable:!0
+};
+i=function(t,e){
+var i;
+return ee(e),p.call(this,"__ee__")?i=this.__ee__:(i=m.value=u(null),f(this,"__ee__",m),
+m.value=null),i[t]?"object"===_typeof2(i[t])?i[t].push(e):i[t]=[i[t],e]:i[t]=e,this;
+},n=function(t,e){
+var n,s;
+return ee(e),s=this,i.call(this,t,n=function(){
+a.call(s,t,n),h.call(e,this,arguments);
+}),n.__eeOnceListener__=e,this;
+},a=function(t,e){
+var i,n,a,s;
+if(ee(e),!p.call(this,"__ee__"))return this;
+if(i=this.__ee__,!i[t])return this;
+if(n=i[t],"object"===("undefined"==typeof n?"undefined":_typeof2(n)))for(s=0;a=n[s];++s)(a===e||a.__eeOnceListener__===e)&&(2===n.length?i[t]=n[s?0:1]:n.splice(s,1));else(n===e||n.__eeOnceListener__===e)&&delete i[t];
+return this;
+},s=function(t){
+var e,i,n,a,s;
+if(p.call(this,"__ee__")&&(a=this.__ee__[t]))if("object"===("undefined"==typeof a?"undefined":_typeof2(a))){
+for(i=arguments.length,s=new Array(i-1),e=1;i>e;++e)s[e-1]=arguments[e];
+for(a=a.slice(),e=0;n=a[e];++e)h.call(n,this,s);
+}else switch(arguments.length){
+case 1:
+c.call(a,this);
+break;
+
+case 2:
+c.call(a,this,arguments[1]);
+break;
+
+case 3:
+c.call(a,this,arguments[1],arguments[2]);
+break;
+
+default:
+for(i=arguments.length,s=new Array(i-1),e=1;i>e;++e)s[e-1]=arguments[e];
+h.call(a,this,s);
+}
+},o={
+on:i,
+once:n,
+off:a,
+emit:s
+},r={
+on:te(i),
+once:te(n),
+off:te(a),
+emit:te(s)
+},l=d({},r),t.exports=e=function(t){
+return null==t?u(l):d(Object(t),r);
+},e.methods=o;
+});
+ie.methods;
+}
+p.prototype={
+setCallBack:function(t){
+t&&(this.callback=t);
+},
+start:function(t){
+t&&(this.callback=t),this.running||(this.running=!0,this.afternow=Date.now(),this._timeupdate());
+},
+stop:function(){
+this.running&&(this.running=!1),window.requestAnimationFrame?window.cancelAnimationFrame(this.timecount):clearTimeout(this.timecount),
+this.timecount=0;
+},
+isRunning:function(){
+return this.running;
+},
+_timeupdate:function(){
+window.requestAnimationFrame&&"timeout"!==this.timemode?this._rafMode():this._timeoutMode();
+},
+_rafMode:function(){
+var t=this;
+this.timecount=requestAnimationFrame(function(){
+t._timeupdate();
+}),this.now=Date.now(),this.delta=this.now-this.afternow,this.delta>=this.interval&&this.callback&&(this.afternow=this.now-this.delta%this.interval,
+this.callback((this.delta/this.interval).toFixed(2)));
+},
+_timeoutMode:function(){
+this.timecount=setTimeout(this._timeupdate,this.interval),this.callback();
+}
+};
+var ne=m,ae='<txpdiv class="txp_barrage txp_barrage_external" style="position:absolute;top:0;left:0;width:100%;height:100%;overflow: hidden;">\n        <style type="text/css">\n            .txp_barrage{\n                top: 0px;\n                right:0px;\n                bottom: 0px;\n                left: 0px;\n                \n                position: absolute;\n                margin: auto;\n            }\n            .txp_barrage .txp_barrage_avatar,.txp_barrage .txp_barrage_emoji{\n                height: 100%;\n                width:unset;\n            }\n            .txp_barrage .txp_barrage_avatar{\n                margin-right:unset; \n            }\n            .txp_barrage .txp_barrage_item .txp_text{\n                height: 100%;\n                background: inherit;\n                -webkit-text-fill-color: inherit;\n                padding: 0 10px;\n            }\n            .txp_barrage .txp_barrage_item_bubble{\n                border-radius:  9999px;\n            }\n            .txp_barrage_item_bubble_front{\n                display: inline-block;\n                position: relative;\n                height: 100%;\n                vertical-align: unset;\n            }\n            .txp_barrage_item_bubble_front .txp_barrage_vipicon{\n                right: 0;\n                bottom: 0;\n                top:unset;\n                left: unset;\n                height: 40%;\n            }\n            .txp_barrage .txp_svg_icon_like{\n                height: 60%;\n                width:unset;\n                vertical-align: unset;\n            }\n            .txp_barrage .txp_barrage_badge{\n                height: 100%;\n                background: unset;\n                -webkit-text-fill-color: white;\n                color: white;\n            }\n            .txp_barrage .txp_barrage_badge .txp_icon_text{\n                -webkit-text-fill-color: white;\n            }\n            .txp_barrage .txp_barrage_item_hover {\n                background: rgba(0,0,0,0.7) !important;\n                color:white !important;\n                border-radius: 99999px;\n                z-index: 1;\n                -webkit-text-fill-color:unset !important;\n            }\n            .txp_barrage .txp_barrage_item_speaker {\n                background-image: linear-gradient(to right,rgba(255,92,56,0.9) 0,rgba(253,177,41,0.9) 100%)!important;\n                color:white !important;\n                border-radius: 99999px;\n                z-index: 1;\n                -webkit-text-fill-color:unset !important;\n                text-shadow: unset !important;\n                stroke: unset !important;           \n\n            }\n            .txp_barrage .txp_barrage_item_speaker .txp_barrage_item_wrapper{\n                background: unset !important;\n            }\n            .txp_barrage .txp_barrage_itxp_barrage_item_speakertem_star .txp_text{\n                background: unset !important;\n            }\n\n            .txp_barrage .txp_barrage_item {\n                padding: 4px 20px 4px 10px;            \n            }\n            .txp_barrage .txp_barrage_item_wrapper{\n                background: inherit;\n                -webkit-text-fill-color: inherit;\n            }\n            \n\n            .txp_barrage .txp_barrage_item_hover .txp_barrage_item_wrapper{\n                background: unset !important;\n            }\n            .txp_barrage .txp_barrage_item_hover .txp_text{\n                background: unset !important;\n            }\n            .txp_barrage .txp_barrage_badge{\n                background: inherit;\n                -webkit-text-fill-color: inherit;\n            }\n            .txp_barrage .txp_icon_text{\n                background: inherit;\n                -webkit-text-fill-color: inherit;\n            }\n            .txp_barrage .txp_barrage_item_self{\n                \n                border: 1px solid white;\n                border-radius: 99999px;\n    \n            }\n            .txp_barrage .like{\n                -webkit-text-fill-color: red;\n            }\n    </style>\n    <svg class="txp_svg_sprite" display="none" version="1.1" xmlns="http://www.w3.org/2000/svg">\n        <symbol id="txp_svg_icon_like" viewBox="0 0 20 20">\n            <path d="M18.4 8.5l-2 9.4c-0.2 0.6-0.2 1.1-0.6 1.3 -0.4 0.3-1 0.2-1.9 0.2 -2.9 0-10.4 0-10.4 0l0-12 2.1-5c0 0 0.6-2 1.7-2 1.4 0 1.2 2 1.2 2s0 1.3 0 3c0 0.7 0.2 1 1 1 6.5 0 6.9 0 6.9 0 0 0 0 0 0 0 0 0 0 0 0 0 0.5 0 1.6-0.2 1.9 0.5C18.5 7.4 18.6 7.9 18.4 8.5zM1.5 19.5c-0.6 0-1-0.4-1-1v-10c0-0.6 0.4-1 1-1s1 0.4 1 1v10C2.5 19.1 2.1 19.5 1.5 19.5z"></path>\n        </symbol>\n    </svg>\n    \n</txpdiv>',se=g,oe='<txpdiv class="txp_barrage_item">\n    <txpdiv class="txp_text"></txpdiv>\n</txpdiv>',re='<txpdiv class="txp_barrage_item_top">\n    <txpdiv class="txp_text"></txpdiv>\n</txpdiv>',le='<txpdiv class="txp_barrage_item_bottom">\n    <txpdiv class="txp_text"></txpdiv>\n</txpdiv>',he={
+hasClass:function(t,e){
+return t&&t.className&&t.className.indexOf(e)>-1;
+},
+addClass:function(t,e){
+if(!this.hasClass(t,e)&&t)if(t.className&&0!==t.className.length){
+var i=t.className.split(" ");
+i.push(e),t.className=i.join(" ");
+}else t.className=e;
+},
+removeClass:function(t,e){
+if(this.hasClass(t,e)){
+var i=t.className.split(" "),n=i.indexOf(e);
+i.splice(n,1),t.className=i.join(" ");
+}
+},
+css:function ge(e,i,n){
+if(e&&i){
+if("undefined"==typeof n&&"string"==typeof i)return;
+if("undefined"==typeof n&&"object"===t(i)){
+var ge=i;
+for(var a in ge)ge.hasOwnProperty(a)&&(/width|height|left|right|top|bottom/.test(a)&&"number"==typeof ge[a]&&(ge[a]="".concat(ge[a],"px")),
+e.style[a]=ge[a]);
+}else if("string"==typeof i&&("string"==typeof n||"number"==typeof n)){
+var s=n;
+/width|height|left|right|top|bottom/i.test(i)&&"number"==typeof n&&(s="".concat(n,"px")),
+e.style[i]=s;
+}
+}
+}
+},ce={},ue={
+loadCss:function(t){
+var e=1,i=function s(t,i,n){
+var a=document.createElement("link");
+a.rel="stylesheet",a.type="text/css",a.onload=function(){
+i();
+},a.onerror=function(){
+return e>=3?void n():(e+=1,a.parentNode.removeChild(a),void s("".concat(b(t),"?v=").concat(parseInt(1e10*Math.random())),i,n));
+},a.href=t,document.head.appendChild(a);
+},n=function(){
+for(var e=document.querySelectorAll('link[rel="stylesheet"]'),i=function(t){
+var e=t,i=e.indexOf("?");
+i>0&&(e=e.slice(0,i));
+var n=e.lastIndexOf("/");
+return n>0&&(e=e.slice(n+1,e.length)),e;
+},n=i(t),a=null,s=e.length,o=0;s>o;o+=1)if(a=e[o],a&&a.href){
+var r=i(a.href);
+if(r===n)return!0;
+}
+return!1;
+},a=new Promise(function(e,a){
+var s=n();
+s?e():i(t,e,a);
+});
+return a;
+},
+loadScript:function(t){
+function e(){
+s.test(n.readyState)&&(n.onload=null,n.onerror=null,n.onreadystatechange=null,n=null,
+r(!0));
+}
+var i=t||{};
+i.onsuccess=i.onsuccess||y;
+var n=document.createElement("script"),a=document.getElementsByTagName("head")[0],s=/^(?:loaded|complete|undefined)$/;
+if(i.url){
+var o=b(i.url),r=function(t){
+var e;
+if(ce[o])for(;ce[o].length>0;)e=ce[o].shift(),"function"==typeof e&&e(t);
+};
+if(ce[o]&&ce[o].length)return void ce[o].push(i.onsuccess);
+ce[o]=[i.onsuccess],n.async="async",n.src=i.url,n.charset="utf-8",i.crossorigin&&n.setAttribute("crossorigin",""),
+n.onerror=function(){
+n.onload=null,n.onerror=null,n.onreadystatechange=null,n=null,r(!1);
+},n.onload=e,n.onerror=e,n.onreadystatechange=e,a.appendChild(n);
+}
+},
+hasExsit:function(t){
+for(var e=b(t),i=document.getElementsByTagName("script"),n=0,a=i.length;a>n;n+=1)if(i[n].src&&-1!==i[n].src.indexOf(e))return!0;
+return!1;
+}
+},fe=function(){
+function t(){
+e(this,t),this.domlist=[],this.lastDom={};
+}
+return n(t,[{
+key:"handleDom",
+value:function(t){
+for(var e=this.domlist.length-1;e>=0;e-=1)t&&t(this.domlist[e])&&this.domlist.splice(e,1);
+}
+},{
+key:"checkLast",
+value:function(t){
+var e=this;
+Object.keys(this.lastDom).forEach(function(i){
+t(e.lastDom[i],i);
+});
+}
+},{
+key:"push",
+value:function(t,e){
+this.domlist.push(t),this.lastDom[e]=t;
+}
+}]),t;
+}(),de=function(){
+function t(i){
+e(this,t),this.list={
+scroll:{
+show:{},
+cache:{}
+}
+},this.enablePosition=!!i,this.enablePosition&&(this.list.top={
+show:{},
+cache:{}
+},this.list.bottom={
+show:{},
+cache:{}
+});
+}
+return n(t,[{
+key:"addList",
+value:function(t){
+if(v(t))for(var e=0,i=t.length;i>e;e+=1)this.addBarrage(t[e]);else this.addBarrage(t);
+}
+},{
+key:"addBarrage",
+value:function(t){
+if("[object Object]"===Object.prototype.toString.call(t)&&(t.html||t.content)){
+var e=t.position||1;
+this.enablePosition||(e=1),this.add(t,e);
+}
+}
+},{
+key:"getList",
+value:function(t){
+var e;
+switch(t){
+case 1:
+e=this.list.scroll;
+break;
+
+case 5:
+e=this.list.top;
+break;
+
+case 6:
+e=this.list.bottom;
+break;
+
+default:
+e=this.list.scroll;
+}
+return e;
+}
+},{
+key:"add",
+value:function(t,e){
+var i,n=this.getList(e);
+i=t.mustShow?n.show:n.cache,t.index?(i[t.index]||(i[t.index]=[]),i[t.index].push(t)):(i.priority||(i.priority=[]),
+i.priority.push(t));
+}
+},{
+key:"get",
+value:function(t,e){
+var i=this.getList(e);
+return i.show.priority&&i.show.priority.length?i.show.priority.shift():i.show[t]&&i.show[t].length?i.show[t].shift():i.cache[t]&&i.cache[t].length?i.cache[t].shift():i.cache.priority&&i.cache.priority.length?i.cache.priority.shift():null;
+}
+},{
+key:"reset",
+value:function(){
+this.list.scroll.show={},this.list.scroll.cache={},this.enablePosition&&(this.list.top.show={},
+this.list.top.cache={},this.list.bottom.show={},this.list.bottom.cache={});
+}
+},{
+key:"clear",
+value:function(){
+this.list.scroll.cache={},this.enablePosition&&(this.list.top.cache={},this.list.bottom.cache={});
+}
+}]),t;
+}(),pe={
+fps:60,
+speed:2,
+rate:1,
+top:!1,
+bottom:!1,
+star:!1,
+gift:!1,
+lineHeight:36,
+enableSetArea:!1,
+userNum:5,
+interval:30,
+cssUrl:"",
+fontSize:"xs",
+opacity:1,
+enableColor:!0,
+enablePosition:!1,
+enableEgg:!1,
+autoFont:!0,
+loop:!1,
+marginBottom:0,
+enableMouseEvent:!1
+},me=function(){
+function t(i){
+e(this,t),ie(this);
+var n={};
+_extends(n,pe,i),n.cssUrl&&this._loadStyle(n.cssUrl),this._initDataset(n),this._write(n.wrapper),
+this._windowResize(),this.Timer=ne(n.fps),this.Timer.setCallBack(this.Animation.bind(this));
+var a,s;
+this._clickHandler&&(a=this._clickHandler.bind(this)),this._menuHandler&&(s=this._menuHandler.bind(this)),
+this.Factory=_(this.dataset.$container,a,s,this.dataset.enableMouseEvent),this.BarragePool=se(this.Factory.scrollBarrage),
+this.active=new fe,this.list=new de(this.dataset.enablePosition);
+}
+return n(t,[{
+key:"_loadStyle",
+value:function(t){
+var e=this;
+ue.loadCss(t).then(function(){
+e.updateSize();
+});
+}
+},{
+key:"_initDataset",
+value:function(t){
+this.dataset={
+currentBlock:0,
+index:0,
+interval:t.interval,
+width:"",
+height:"",
+speed:t.speed,
+rate:t.rate,
+realSpeed:{
+0:t.speed*t.rate*1.2,
+1:t.speed*t.rate*1
+},
+keyMap:{},
+lineHeight:t.lineHeight,
+state:3,
+timerState:3,
+fps:t.fps,
+count:0,
+fontSetting:t.fontSize,
+fontSize:t.autoFont?x(window.innerWidth,t.fontSize):0,
+opacity:t.opacity,
+userNum:t.userNum,
+maxNum:0,
+actualNum:0,
+enableColor:t.enableColor,
+enableScroll:!0,
+enableTop:!0,
+enableBottom:!0,
+enableStar:!0,
+enablePosition:t.enablePosition,
+enableEgg:t.enableEgg,
+autoFont:t.autoFont,
+loop:t.loop,
+marginBottom:t.marginBottom,
+enableMouseEvent:t.enableMouseEvent
+};
+}
+},{
+key:"_write",
+value:function(t){
+var e=document.createElement("div");
+e.innerHTML=ae,this.dataset.$container=e.firstChild,this.dataset.$scroll=this.dataset.$container.querySelector(".txp_barrage_scroll_wrap"),
+t.appendChild(this.dataset.$container),this.updateSize(),this._setOpacity(this.dataset.opacity);
+}
+},{
+key:"_setOpacity",
+value:function(t){
+this.dataset.$container.style.opacity=t||1;
+}
+},{
+key:"_start",
+value:function(t){
+this.dataset.timerState=1,this.updateSize(),this.Timer.start(t),this._handlePosition("top","resume"),
+this._handlePosition("bottom","resume");
+}
+},{
+key:"_pause",
+value:function(){
+this.dataset.timerState=2,this.Timer.stop(),this._handlePosition("top","pause"),
+this._handlePosition("bottom","pause");
+}
+},{
+key:"Animation",
+value:function(){
+this._defaultAnimation();
+}
+},{
+key:"_defaultAnimation",
+value:function(t){
+this.dataset.count>this.dataset.fps/2&&(this.dataset.count=0,this._create()),this._animate(t),
+this.dataset.count+=1;
+}
+},{
+key:"_getAvailable",
+value:function(){
+var t=this,e=[],i=0;
+e.push({
+start:0,
+end:0
+}),this.active.checkLast(function(n,a){
+if(n.left+n.width+50>=t.dataset.width){
+var s=n.height,o=a*s,r=(a-1)*s;
+if(r===e[i].end)e[i].end=o;else if(r>e[i].end)e.push({
+start:r,
+end:o
+}),i+=1;else for(var l=0,h=e.length;h-1>l;l+=1)if(e[l].start>=o&&(0===l||e[l-1].end<=r)){
+e.splice(l,0,{
+start:r,
+end:o
+}),i+=1;
+break;
+}
+}
+});
+for(var n=this.dataset.actualNum,a=1,s=0,o=[];n>=a;){
+var r=(a-1)*this.dataset.lineHeight,l=a*this.dataset.lineHeight;
+e[s+1]?(r>=e[s].end&&l<=e[s+1].start&&o.push(a),l>e[s+1].end&&(s+=1)):r>=e[s].end&&o.push(a),
+a+=1;
+}
+return o;
+}
+},{
+key:"_create",
+value:function(){
+this.dataset.enablePosition?this._createPositionDanmu():this._createScroll();
+}
+},{
+key:"_createScroll",
+value:function(){
+if(this.dataset.enableScroll){
+var t=this._getAvailable();
+if(t.length)for(var e=0,i=t.length;i>e;e+=1){
+var n=t[e],a=this.list.get(this.dataset.index,1);
+if(this.dataset.loop&&this._addDanmu(a),!a)break;
+this._createScrollDanmu(a,n);
+}
+}
+}
+},{
+key:"_createScrollDanmu",
+value:function(t,e){
+this.emit("showDanmu",t);
+var i=this.BarragePool.get();
+i&&((!this.dataset.enableColor||t.isStar)&&(t.color="#ffffff",t.gradienColor=[],
+t.gradienColor.push("#ffffff"),t.gradienColor.push("#ffffff")),i.render(t,this.dataset.fontSize,this.dataset.lineHeight),
+i.move(this.dataset.width,(e-1)*this.dataset.lineHeight),i.trail=e,this.active.push(i,e));
+}
+},{
+key:"_animate",
+value:function(){
+var t=this;
+this.active.handleDom(function(e){
+if(!e.isHove){
+var i=t.dataset.realSpeed[e.trail%2];
+e.isSys&&(i*=2);
+var n=e.left-i;
+if(e.move(n),n+e.width+50<0)return t.BarragePool.save(e),!0;
+}
+return!1;
+});
+}
+},{
+key:"_toggleColor",
+value:function(t){
+t?this.dataset.enableColor=!0:(this.dataset.enableColor=!1,this.active.handleDom(function(t){
+return t.color("#ffffff"),!1;
+}));
+}
+},{
+key:"_clear",
+value:function(){
+this._clearScroll(),this.dataset.enablePosition&&(this._handlePosition("top","clear"),
+this._handlePosition("bottom","clear"));
+}
+},{
+key:"_clearScroll",
+value:function(){
+this.active.handleDom(function(t){
+return t.move(-t.width-100),!1;
+});
+}
+},{
+key:"_addDanmu",
+value:function(t){
+this.list.addList(t);
+}
+},{
+key:"_windowResize",
+value:function(){
+var t=this,e=null;
+window.onresize=function(){
+1===t.dataset.state&&1===t.dataset.timerState&&t._pause(),e&&clearTimeout(e),e=setTimeout(function(){
+1===t.dataset.state&&t._start(),t.updateSize();
+},300);
+};
+}
+},{
+key:"updateSize",
+value:function(){
+this.dataset.width=this.dataset.$container.clientWidth,this.dataset.height=this.dataset.$container.clientHeight,
+this.updateFont(),this.updateLineNum();
+}
+},{
+key:"updateLineNum",
+value:function(){
+this.dataset.maxNum=parseInt((this.dataset.height-this.dataset.marginBottom)/this.dataset.lineHeight,10),
+this.dataset.maxNum=this.dataset.maxNum>=0?this.dataset.maxNum:0,this.dataset.actualNum=this.dataset.userNum>this.dataset.maxNum?this.dataset.maxNum:this.dataset.userNum,
+this.emit("lineUpdate",this.dataset.maxNum);
+}
+},{
+key:"updateFont",
+value:function(){
+this.dataset.autoFont&&(this.dataset.fontSize=x(this.dataset.width,this.dataset.fontSetting),
+this.dataset.lineHeight=Math.ceil(1.5*this.dataset.fontSize));
+}
+},{
+key:"index",
+set:function(t){
+var e=t?parseInt(t,10):0;
+if(e!==this.dataset.index&&(this.dataset.index=e,1===this.dataset.state)){
+var i=Math.floor((e+1)/this.dataset.interval);
+i!==this.dataset.currentBlock&&(this.dataset.currentBlock=i,this.emit("blockChange",e));
+}
+},
+get:function(){
+return this.dataset.index;
+}
+}]),t;
+}();
+return k(me),w(me),me;
+});define("new_video/plugin_base.js",[],function(){
+"use strict";
+var t=0,o=function(t,o){
+var e=function(){};
+e.prototype=o.prototype,t.prototype=new e,t.prototype.constructor=t,t.uber=o.prototype;
+},e=function(){
+this.player=null;
+};
+return e.prototype.setPlayer=function(t){
+this.player=t;
+},e.prototype.setBlockEvt=function(t){
+this.player._setBlockPlugin(t,this);
+},e.prototype.setUnblockEvt=function(t){
+this.player._setBlockPlugin(t,null);
+},e.prototype.recv=function(o){
+var e=this[o+"Handler"];
+return"function"==typeof e?e.apply(this,arguments):t;
+},{
+Class:e,
+inherit:o,
+BASE_BITSET:t
+};
+});define("pages/video_plugin/base.js",[],function(){
+"use strict";
+var t=0,e=function(t,e){
+var n=function(){};
+n.prototype=e.prototype,t.prototype=new n,t.prototype.constructor=t,t.uber=e.prototype;
+},n=function(){
+this.player=null;
+};
+return n.prototype.setPlayer=function(t){
+this.player=t;
+},n.prototype.setBlockEvt=function(t){
+this.player._setBlockPlugin?this.player._setBlockPlugin(t,this):this.player.setBlockPlugin(t,this);
+},n.prototype.setUnblockEvt=function(t){
+this.player._setBlockPlugin?this.player._setBlockPlugin(t,null):this.player.setBlockPlugin(t,null);
+},n.prototype.recv=function(e){
+var n=this[e+"Handler"];
+if("function"==typeof n){
+var o=n.apply(this,arguments);
+return"undefined"==typeof o||null===o?t:o;
+}
+return t;
+},{
+Class:n,
+inherit:e,
+BASE_BITSET:t
+};
+});define("pages/video_ctrl.js",[],function(){
+"use strict";
+function i(i){
+i=i||window;
+var n=i.cgiData;
+return n&&2==n.ori_status&&1==n.is_mp_video&&(n.nick_name||n.hit_username)?!0:!1;
+}
+function n(i){
+return i=i||window,!1;
+}
+function t(){
+return!1;
+}
+function e(){
+return-1!=w.indexOf("&dd=1")?!1:"54"==r.appmsg_type?!1:!0;
+}
+function o(){
+var i;
+if(parent==window)i=window;else try{
+{
+r.__videoDefaultRatio;
+}
+i=r;
+}catch(n){
+i=window;
+}
+var t=i.__videoDefaultRatio||16/9;
+return"54"==i.appmsg_type?t:t;
+}
+var r=window.withoutIframe?window:window.parent.window,w=window.location.href;
+return{
+showPauseTips:e,
+showVideoLike:t,
+showVideoDetail:n,
+showReprint:i,
+getRatio:o
+};
+});define("a/a_config.js",[],function(){
+"use strict";
+var e={
+ANDROID_APP_PRODUCT_TYPE:12,
+IOS_APP_PRODUCT_TYPE:19,
+ADD_CONTACT_PRODUCT_TYPE:23,
+MINI_GAME_PRODUCT_TYPE:46,
+CARD_PRODUCT_TYPE:36,
+SHOP_PRODUCT_TYPE:30,
+WECHATCARD_PRODUCT_TYPE:47,
+BRAND_WECHAT_PRODUCT_TYPE:29,
+BRAND_GDT_PRODUCT_TYPE:31
+},t={
+POS_BOTTOM:0,
+POS_MID:4,
+POS_SPONSOR:3,
+POS_AD_BEFORE_VIDEO:7,
+POS_AD_AFTER_VIDEO:9,
+POS_AD_MID_VIDEO:16
+},o={
+AD_DEST_TYPE:0,
+OUTER_DEST_TYPE:1,
+APPDETAIL_DEST_TYPE:2,
+BIZ_DEST_TYPE:3,
+APPINFO_PAGE_DEST_TYPE:4,
+WECHAT_SHOP_DEST_TYPE:5,
+WECHAT_APPLET_DEST_TYPE:6,
+LEAF_DEST_TYPE:7,
+CANVAS_AD_DEST_TYPE:9
+},a=function(){
+var e=18e4;
+return window.user_uin&&!isNaN(parseInt(window.user_uin,10))&&(parseInt(window.user_uin,10)%10===2||parseInt(window.user_uin,10)%10===3)&&(e=3e4),
+console.info("[广告时间缓存实验]",e),e;
+}(),_=["openUrlWithExtraWebview","openADCanvas","addContact","profile","getInstallState","installDownloadTask","addDownloadTask","pauseDownloadTask","resumeDownloadTask","queryDownloadTask","launchApplication","writeCommData","adDataReport","downloadAppInternal","wxdownload:progress_change","menu:share:appmessage","menu:share:timeline","menu:share:weibo","menu:share:facebook","menu:general:share","launch3rdApp","addDownloadTaskStraight","sendAppMessage","shareTimeline","getNetworkType","jumpToBizProfile","shareWeibo","shareFB","imagePreview","getBackgroundAudioState","openWeApp","preloadMiniProgramContacts","preloadMiniProgramEnv","calRqt","openCardDetail","batchAddCard","handleMPPageAction","makePhoneCall","getOAID","saveWaid","batchPreloadMiniProgram","onScreenShot","handleAdAction","activity:state_change","getAdIdInfo","onWebPageUrlExposed","openFinderView","predownloadMiniProgramPackage"],i=["/mp/advertisement_report","/mp/ad_report","/mp/ad_video_report","/mp/jsmonitor","/mp/ad_complaint","/mp/jsreport","/tp/datacenter/report","/mp/getappmsgad","/mp/ad_biz_info","/mp/appmsg_video_snap"],n=[/(https?:)?\/\/mp\.weixin\.qq\.com\/mp\/advertisement_report/,/(https?:)?\/\/mp\.weixin\.qq\.com\/mp\/ad_report/,/(https?:)?\/\/mp\.weixin\.qq\.com\/mp\/ad_video_report/,/(https?:)?\/\/mp\.weixin\.qq\.com\/mp\/jsmonitor/,/(https?:)?\/\/mp\.weixin\.qq\.com\/mp\/ad_complaint/,/(https?:)?\/\/mp\.weixin\.qq\.com\/mp\/jsreport/,/(https?:)?\/\/mp\.weixin\.qq\.com\/tp\/datacenter\/report/,/(https?:)?\/\/mp\.weixin\.qq\.com\/mp\/getappmsgad/,/(https?:)?\/\/mp\.weixin\.qq\.com\/mp\/ad_biz_info/,/(https?:)?\/\/mp\.weixin\.qq\.com\/tp\/goods_info/,/(https?:)?\/\/mp\.weixin\.qq\.com\/tp\/app_mobile/,/(https?:)?\/\/mp\.weixin\.qq\.com\/tp\/datareport\/report/,/(https?:)?\/\/mp\.weixin\.qq\.com\/promotion\/wxalandpage\/getcanvasinfo/],p="转化按钮",r="广告文案或辅助信息",d={
+hint_txt:"创意-20200827_1",
+url:"https://ad.weixin.qq.com/guide/196?weixinadkey=59d5cf0b4fbf7d2f66cd90aaa82a5208057512dd06fcb64d7fd57e71ec15945e1744ac499e05a04999381c3bf30c21ca&amp;gdt_vid=wx0clsqxat6lzly601&amp;weixinadinfo=315019981.wx0clsqxat6lzly601.75.1",
+type:"0",
+rl:"http://ad.wx.com:12638/cgi-bin/click?viewid=AQM1xOr6MFeZmWeZrowCvQcrvQUBUq4o8ER2yFgwF9grPdtUR9bIJQ8laqMAJjGlkGLuVbyABIPX6Eifa2%2FK%2Buq17IIT21tYcUnpeU4VqEEsEQhc5Pa7C7drAvl0Mz30CNepODMXeD%2BEdny8SmmxN7prV78e1L2S6oqhNjrnTqM1t40ZGU84httoAODXEjmE89IX0ncOiP1oTsgm1tYwahSkxN6HLZIb6bhxZrc5ba3mCKMZ5GV4UEyDuQCyySxtA5QTt0eQJJA%2FSgHe79yTxUrzzoGrtlhK0O3HussVeRjKcvLkE6w%2FpQBnropwT%2FmE23RT2bOoyw%2BVCMlWTtk%2Bvxh%2FIOFAmrWHYzDuNkDNRo3um26RD2TFpeyRasbZoFRAV7RA9k4P3REAH4vemxktbNq24rtuF6MFGEcXpcGOD%2FxZJlBmInM7rguFAhRQWvCy3nIpO7knN2rl2DZv%2FcfkuoP4bedzUMcxtrU2Wz%2B82EG9ULHJunGHT%2F%2BcWj%2Bv8n%2Fh9bUtAtk7Fr1HBQdkQ8SbYadhRDWWuSEC2iMfqpMyzNqLltdxhyXxMRpsruPb2p4WoHnSvuGfbnkXIKcDppOTLB38xStPIbbaaR4FC%2B4AOF1UqbtMor9JJQQNz3vspSngY%2F37uYiQXAKNYB2RAB%2BbfoYMSS2VcJvY%2B0lWH3%2BYFTmBs6%2BxixGTJmB4%2FXZZcNs4PgRs6OoIefEnLz%2FvwoAvrs%2FUPotqevoiHfq%2FlLILAzo28D%2FKSU9hOOHXrS4LrUYhK47WKSeoglnagaOZI5kGZa9iBcwj9V6FR4HEml51P9u5xaTOnPZjfEAx5l6BBxTT4379irAZCB2Zfcd6wBU2Eo5p9yXVSH%2FCH8yVAgIEsrJ9oeqpO%2FwozsQ2PkXw%2Bz77B56hYp1zYG7HK%2BCDjx1NSisa6g8PFa72xOb8wpjZ9Lao70oGSWshIjCH4kWfKX0P8uFJc22L%2FZihKj0J%2BqgC1LgiMc6SXmFHdvTSIxTRKm9GImpbVfLTN3xrT%2BGGutwMTfgWta7EDR7d6HXQBA1orNotnnK37GOw1jHud8fzQkfuMN%2F7DO6kW0wAXs4LDMhJpnHi2%2Ba4VjL8Yjh0wmTZkVy4iIPYDmYSAzuJ3aP3cXuGv%2B1JwF%2Fod7hCA6RBYwZN2fXvO5AUo7FdoRr8ssPB7eAiNhcFonMv5%2Bt8L1b7QLoXGlplvxh9Fz669q43xnDsEy8ucOfyush8RiYLPxGj4YFr2gy6%2BAV5u%2FMgZIShq149jRn42%2B%2BnmzPC8JdiiIe4p5Ec7KFFrv%2F302DcKBPI9lQDsC1xWAvIfJcnxC%2FqYgDikLE1SsurxV2PV1icS%2BpU706S2LmnpyAsZw%3D%3D",
+apurl:"http://ad.wx.com:12638/cgi-bin/exposure?viewid=AQM1xOr6MFeZmWeZrowCvQcrvQUBUq4o8ER2yFgwF9grPdtUR9bIJQ8laqMAJjGlkGLuVbyABIPX6Eifa2%2FK%2Buq17IIT21tYcUnpeU4VqEEsEQhc5Pa7C7drAvl0Mz30CNepODMXeD%2BEdny8SmmxN7prV78e1L2S6oqhNjrnTqM1t40ZGU84httoAODXEjmE89IX0ncOiP1oTsgm1tYwahSkxN6HLZIb6bhxZrc5ba3mCKMZ5GV4UEyDuQCyySxtA5QTt0eQJJA%2FSgHe79yTxUrzzoGrtlhK0O3HussVeRjKcvLkE6w%2FpQBnropwT%2FmE23RT2bOoyw%2BVCMlWTtk%2Bvxh%2FIOFAmrWHYzDuNkDNRo3um26RD2TFpeyRasbZoFRAV7RA9k4P3REAH4vemxktbNq24rtuF6MFGEcXpcGOD%2FxZJlBmInM7rguFAhRQWvCy3nIpO7knN2rl2DZv%2FcfkuoP4bedzUMcxtrU2Wz%2B82EG9ULHJunGHT%2F%2BcWj%2Bv8n%2Fh9bUtAtk7Fr1HBQdkQ8SbYadhRDWWuSEC2iMfqpMyzNqLltdxhyXxMRpsruPb2p4WoHnSvuGfbnkXIKcDppOTLB38xStPIbbaaR4FC%2B4AOF1UqbtMor9JJQQNz3vspSngY%2F37uYiQXAKNYB2RAB%2BbfoYMSS2VcJvY%2B0lWH3%2BYFTmBs6%2BxixGTJmB4%2FXZZcNs4PgRs6OoIefEnLz%2FvwoAvrs%2FUPotqevoiHfq%2FlLILAzo28D%2FKSU9hOOHXrS4LrUYhK47WKSeoglnagaOZI5kGZa9iBcwj9V6FR4HEml51P9u5xaTOnPZjfEAx5l6BBxTT4379irAZCB2Zfcd6wBU2Eo5p9yXVSH%2FCH8yVAgIEsrJ9oeqpO%2FwozsQ2PkXw%2Bz77B56hYp1zYG7HK%2BCDjx1NSisa6g8PFa72xOb8wpjZ9Lao70oGSWshIjCH4kWfKX0P8uFJc22L%2FZihKj0J%2BqgC1LgiMc6SXmFHdvTSIxTRKm9GImpbVfLTN3xrT%2BGGutwMTfgWta7EDR7d6HXQBA1orNotnnK37GOw1jHud8fzQkfuMN%2F7DO6kW0wAXs4LDMhJpnHi2%2Ba4VjL8Yjh0wmTZkVy4iIPYDmYSAzuJ3aP3cXuGv%2B1JwF%2Fod7hCA6RBYwZN2fXvO5AUo7FdoRr8ssPB7eAiNhcFonMv5%2Bt8L1b7QLoXGlplvxh9Fz669q43xnDsEy8ucOfyush8RiYLPxGj4YFr2gy6%2BAV5u%2FMgZIShq149jRn42%2B%2BnmzPC8JdiiIe4p5Ec7KFFrv%2F302DcKBPI9lQDsC1xWAvIfJcnxC%2FqYgDikLE1SsurxV2PV1icS%2BpU706S2LmnpyAsZw%3D%3D",
+traceid:"wx0clsqxat6lzly601",
+group_id:"wx0clsqxat6lzly600_wx0clsqxat6lzly601",
+ticket:"",
+pt:2,
+image_url:"http://wxsnsdythumb.wxs.qq.com/141/20204/snscosdownload/SH/reserved/5f4604790009bfd700000000b3679d090000008d00004eec?m=1c9e9086c11018ef774e28ee3b744a67&amp;ck=1c9e9086c11018ef774e28ee3b744a67",
+ad_desc:"",
+biz_appid:"wx69618ae091cf2c76",
+biz_info:{
+user_name:"gh_1e80bb81a1d2",
+nick_name:"微信广告",
+head_img:"https://wxa.wxs.qq.com/res/images/bizsdk/preview/wxlogo.png",
+biz_uin:3094043316,
+signature:"微信广告"
+},
+pos_type:4,
+watermark_type:0,
+logo:"",
+is_cpm:0,
+dest_type:1,
+material_width:960,
+material_height:540,
+ad_width:0,
+ad_height:0,
+use_new_protocol:2,
+product_type:29,
+material_type:0,
+crt_exp_tid:0,
+crt_exp_info:"",
+flow_exp_info:"[{&quot;exp_para&quot;:[{&quot;name&quot;:94574,&quot;value&quot;:&quot;gb&quot;},{&quot;name&quot;:100036,&quot;value&quot;:&quot;1&quot;}]}]",
+watermark_text:"活动推广",
+crt_size:"484",
+button_action:"{&quot;button_text&quot;:&quot;"+p+"&quot;,&quot;jump_type&quot;:1,&quot;jump_url&quot;:&quot;https:\\/\\/ad.weixin.qq.com\\/guide\\/196?weixinadkey=bd80a7a5a0e57a3b971b1c372bb06a3748f8f01c44f1bfe1a0aa4fe927e21037fc57ddfe77f5e0648611197259574f4b&amp;gdt_vid=wx0clsqxat6lzly601&amp;weixinadinfo=315019981.wx0clsqxat6lzly601.75.1&quot;,&quot;text_type&quot;:0}",
+position_index:21,
+shop_image:[],
+material_id_list:[],
+uxinfo:"315019981|wx0clsqxat6lzly601|289237697|0|1598496949|0|0|9020229299926746||AgI0AyUHOnPeccmEYhaAko8Pr4P95P7Vl6qjqKrxaR/CSGQ3e+STumguP/V43UuYT8o=|315020504",
+ext_info:"{}",
+ad_token:"bf8463b9a4b692768c820c412bb705a73e8a9dd2c769f22549e4bb5aeaaeccc1358b60b6ce7546f95cfdf7f73d187572",
+crt_info:"[{&quot;width&quot;:960,&quot;height&quot;:540,&quot;thumb_url&quot;:&quot;http://wxsnsdythumb.wxs.qq.com/141/20204/snscosdownload/SH/reserved/5f4604790009bfd700000000b3679d090000008d00004eec?m=1c9e9086c11018ef774e28ee3b744a67&amp;ck=1c9e9086c11018ef774e28ee3b744a67&quot;,&quot;image_url&quot;:&quot;http://wxsnsdythumb.wxs.qq.com/141/20204/snscosdownload/SH/reserved/5f4604790009bfd700000000b3679d090000008d00004eec?m=1c9e9086c11018ef774e28ee3b744a67&amp;ck=1c9e9086c11018ef774e28ee3b744a67&quot;,&quot;size&quot;:18323,&quot;image_md5&quot;:&quot;1c9e9086c11018ef774e28ee3b744a67&quot;,&quot;materialId&quot;:&quot;112199640&quot;,&quot;card_info&quot;:{&quot;mp_tag_type&quot;:2,&quot;mp_brandeffect_isopen&quot;:0,&quot;mp_tags&quot;:[&quot;"+r+"&quot;]}}]",
+reranking_ext_info:"{&quot;tid&quot;:315020504}",
+ext_back_comm:"{&quot;pctr&quot;:0.019999999553}"
+};
+return{
+defaultMidAdData:d,
+AD_TYPE:e,
+AD_POS:t,
+AD_CACHE_TIME:a,
+AD_DEST_TYPE:o,
+AD_FRAME_DOMAIN:"https://wxa.wxs.qq.com",
+INVALID_METHOD_NAME_MSG_PREFIX:"Invalid methodName",
+INVALID_METHOD_TYPE_MSG_PREFIX:"Invalid methodType",
+INVALID_ARGS_MSG_PREFIX:"Invalid args",
+INVALID_REQ_PATH_MSG_PREFIX:"Invalid request path",
+AD_IFRAME_HIDE_CLASS:"iframe_ad_dn",
+AD_JSAPI_WHITE_LIST:_,
+AD_REQ_PATH_WHITE_LIST:i,
+AD_WEB_COMPT_REQ_PATH_WHITE_LIST:n,
+FRAME_ERROR:"onError",
+FRAME_READY:"onFrameReadyV2",
+CHANGE_FRAME_STYLE:"changeFrameStyle",
+PROXY_ACTION:"onProxyV2",
+PROXY_CALLBACK_ACTION:"proxyCallbackV2",
+CLICK_OUTSIDE_ACTION:"clickOutsideV2",
+CLICK_AD_ACTION:"onAdClick",
+PAGE_SCROLL_ACTION:"pageScrollV2",
+ORIGIN_VIDEO_VID_PREFIX:"wxv",
+AD_VIDEO_FIN_ACTION:"adVideoEnd",
+AD_VIDEO_PLAY_ACTION:"onVideoPlayV2",
+AD_VIDEO_END_ACTION:"onVideoEndV2",
+AD_PLAY_VIDEO_ACTION:"playVideoV2",
+AD_CHANGE_VIDEO_STATE:"changeVideoPlayState",
+AD_VIDEO_SET_SCREEN_STATE_ACTION:"setScreenState",
+GET_APPMSGAD_READY_STATUS_ACTION:"getAppmsgadReadyStatus",
+APPMSGAD_READY_ACTION:"appmsgadReady",
+HAS_AD_DATA_QUERY_KEY:"has_ad_data",
+GET_AD_DATA_AFTER_VIDEO_ACTION_NAME:"getAdDataAfterVideo",
+SET_PAGE_DATA_ACTION_NAME:"setPageDataV2",
+SET_AD_DATA_ACTION_NAME:"setAdDataV2",
+SEND_AD_VID_ACTION:"sendAdVid",
+GET_AD_VID_ACTION:"getAdVid"
+};
+});define("biz_wap/utils/openUrl.js",["biz_wap/jsapi/core.js","biz_wap/utils/mmversion.js"],function(e){
+"use strict";
+function r(e){
+var r=document.createElement("a");
+return r.href=e,{
+source:e,
+protocol:r.protocol.replace(":",""),
+host:r.hostname,
+port:r.port,
+query:r.search,
+params:function(){
+for(var e,t={},i=r.search.replace(/^\?/,"").split("&"),a=i.length,o=0;a>o;o++)i[o]&&(e=i[o].split("="),
+t[e[0]]=e[1]);
+return t;
+}(),
+file:(r.pathname.match(/([^\/?#]+)$/i)||[,""])[1],
+hash:r.hash.replace("#",""),
+path:r.pathname.replace(/^([^\/])/,"/$1"),
+relative:(r.href.match(/tps?:\/\/[^\/]+(.+)/)||[,""])[1],
+segments:r.pathname.replace(/^\//,"").split("/")
+};
+}
+function t(e,t){
+var o;
+t=t||1,0==e.indexOf("/")&&(o=r(location.href),e=o.protocol+"://"+o.host+e,console.log("openUrlWithExtraWebview with relative path:",e)),
+e=e.replace(/(#[^#]*)+/,function(e,r){
+return r;
+}),-1!==navigator.userAgent.indexOf("MicroMessenger")&&(a.isIOS||a.isAndroid||a.isWp)?i.invoke("openUrlWithExtraWebview",{
+url:e,
+openType:t
+},function(r){
+-1==r.err_msg.indexOf("ok")&&(location.href=e);
+}):location.href=e;
+}
+var i=e("biz_wap/jsapi/core.js"),a=e("biz_wap/utils/mmversion.js");
+return{
+openUrlWithExtraWebview:t
+};
+});define("biz_common/utils/report.js",[],function(){
+"use strict";
+return function(n){
+var e=new Image;
+e.src=n;
+};
+});define("biz_common/ui/imgonepx.js",[],function(){
+"use strict";
+return"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyBpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMC1jMDYwIDYxLjEzNDc3NywgMjAxMC8wMi8xMi0xNzozMjowMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENTNSBXaW5kb3dzIiB4bXBNTTpJbnN0YW5jZUlEPSJ4bXAuaWlkOkJDQzA1MTVGNkE2MjExRTRBRjEzODVCM0Q0NEVFMjFBIiB4bXBNTTpEb2N1bWVudElEPSJ4bXAuZGlkOkJDQzA1MTYwNkE2MjExRTRBRjEzODVCM0Q0NEVFMjFBIj4gPHhtcE1NOkRlcml2ZWRGcm9tIHN0UmVmOmluc3RhbmNlSUQ9InhtcC5paWQ6QkNDMDUxNUQ2QTYyMTFFNEFGMTM4NUIzRDQ0RUUyMUEiIHN0UmVmOmRvY3VtZW50SUQ9InhtcC5kaWQ6QkNDMDUxNUU2QTYyMTFFNEFGMTM4NUIzRDQ0RUUyMUEiLz4gPC9yZGY6RGVzY3JpcHRpb24+IDwvcmRmOlJERj4gPC94OnhtcG1ldGE+IDw/eHBhY2tldCBlbmQ9InIiPz6p+a6fAAAAD0lEQVR42mJ89/Y1QIABAAWXAsgVS/hWAAAAAElFTkSuQmCC";
+});
