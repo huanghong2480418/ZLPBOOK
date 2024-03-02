@@ -1,0 +1,17 @@
+var lowVersion = /MSIE|Trident/.test(window.navigator.userAgent) || typeof Proxy == "undefined"
+var element = "<div class='lowVersionPop_mask'></div><div class='lowVersionPop_content'><h3><i></i><span>升级提示</span></h3><p>因技术升级，IE浏览器将不再进行技术支持，请使用其它浏览器进行访问</p><button id='closeLowVersionPop'>我知道了</button><button class='close' id='topCloseLowVersionPop'></button></div>"
+if(lowVersion){
+  var container = document.createElement("div");
+  container.innerHTML = element;
+  container.id = 'lowVersionPop'
+ document.body.appendChild(container);
+ var lowVersionElement = document.getElementById('lowVersionPop');
+ var lowVersionBtnElement = document.getElementById('closeLowVersionPop');
+ var topCloseLowBtnElement = document.getElementById('topCloseLowVersionPop');
+ lowVersionBtnElement.addEventListener('click',function(){
+   lowVersionElement.style.display = 'none';
+ })
+ topCloseLowBtnElement.addEventListener('click',function(){
+   lowVersionElement.style.display = 'none';
+ })
+}
